@@ -1,0 +1,21 @@
+{
+  "name": "Benchmark Setup",
+  "date": "2022-08-06T10:52:41.963Z",
+  "version": "0.1.0",
+  "results": [
+    {
+      "name": "reduce two elements",
+      "ops": 218432140,
+      "margin": 0.44,
+      "percentSlower": 0
+    }
+  ],
+  "fastest": {
+    "name": "reduce two elements",
+    "index": 0
+  },
+  "slowest": {
+    "name": "reduce two elements",
+    "index": 0
+  }
+}
