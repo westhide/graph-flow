@@ -1,6 +1,8 @@
 {
   "include": [
     "env.d.ts",
+    "vite.config.ts",
+    "preset",
     "src/**/*.ts",
     "src/**/*.d.ts",
     "src/**/*.tsx",
