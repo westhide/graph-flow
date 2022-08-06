@@ -3,16 +3,19 @@
   "version": "0.0.0",
   "scripts": {
     "dev": "vite",
-    "type-check": "vue-tsc --noEmit -p tsconfig.vitest.json --composite false",
-    "build": "run-p type-check build-only",
-    "build-only": "vite build",
+    "check:front": "vue-tsc --noEmit -p tsconfig.vitest.json --composite false",
+    "check:wasm": "cargo check --manifest-path ./wasm-rs/Cargo.toml",
+    "build": "run-p check:* build:wasm build:front",
+    "build:front": "vite build",
+    "build:wasm": "wasm-pack build ./wasm-rs --target web",
     "preview": "vite preview --port 4173",
-    "test": "vitest --environment jsdom run",
+    "test:front": "vitest --environment jsdom run",
     "test:coverage": "vitest --environment jsdom run --coverage",
-    "test:unit": "vitest --environment jsdom",
+    "test:watch": "vitest --environment jsdom",
     "test:ui": "vitest --environment jsdom --ui",
     "test:e2e": "start-server-and-test preview http://localhost:4173/ 'cypress open --e2e'",
     "test:e2e:ci": "start-server-and-test preview http://localhost:4173/ 'cypress run --e2e'",
+    "test:wasm": "wasm-pack test --chrome ./wasm-rs",
     "benchmark": "ts-node benchmark",
     "lint": "eslint . --ext .vue,.js,.jsx,.cjs,.mjs,.ts,.tsx,.cts,.mts --fix --ignore-path .gitignore",
     "prepare": "husky install"
@@ -72,6 +75,7 @@
     "vite-plugin-inspect": "^0.6.0",
     "vite-plugin-pages": "^0.25.0",
     "vite-plugin-vue-layouts": "^0.7.0",
+    "vite-plugin-wasm-pack": "^0.1.12",
     "vitest": "^0.18.1",
     "vue-tsc": "^0.38.8"
   }
