@@ -17,6 +17,7 @@ module.exports = {
     "@typescript-eslint/no-non-null-assertion": "off",
     "vue/multi-word-component-names": "off",
     "vue/no-setup-props-destructure": "off",
+    "vue/html-self-closing": "error",
   },
   overrides: [
     {

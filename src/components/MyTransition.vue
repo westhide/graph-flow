@@ -2,7 +2,7 @@
   <Transition name="fade" mode="out-in" appear>
     <!--    ! Transition need root element to take effect-->
     <div>
-      <slot></slot>
+      <slot />
     </div>
   </Transition>
 </template>

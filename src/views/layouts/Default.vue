@@ -3,7 +3,7 @@ import Context from "./base/Context.vue";
 </script>
 
 <template>
-  <Context></Context>
+  <Context />
 </template>
 
 <style></style>
