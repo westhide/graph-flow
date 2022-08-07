@@ -23,7 +23,7 @@ export default [
     deep: true,
     resolvers: [IconsResolver()],
     dts: "src/components.d.ts",
-    directoryAsNamespace: false,
+    directoryAsNamespace: true,
     globalNamespaces: [],
     directives: true,
     allowOverrides: false,
