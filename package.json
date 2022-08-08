@@ -18,7 +18,9 @@
     "test:e2e:ci": "start-server-and-test preview http://localhost:4173/ 'cypress run --e2e'",
     "test:wasm": "wasm-pack test --chrome ./wasm-rs",
     "benchmark": "ts-node benchmark",
-    "lint": "eslint . --ext .vue,.js,.jsx,.cjs,.mjs,.ts,.tsx,.cts,.mts --fix",
+    "lint": "run-p lint:*",
+    "lint:script": "eslint . --ext .vue,.js,.jsx,.cjs,.mjs,.ts,.tsx,.cts,.mts --fix",
+    "lint:css": "prettier --write \"src/**/*.{less,postcss,css,scss}\"",
     "prepare": "husky install"
   },
   "dependencies": {
