@@ -14,6 +14,7 @@ module.exports = {
     "@vue/eslint-config-prettier",
   ],
   rules: {
+    "no-undef": "off",
     "@typescript-eslint/no-non-null-assertion": "off",
     "vue/multi-word-component-names": "off",
     "vue/no-setup-props-destructure": "off",
