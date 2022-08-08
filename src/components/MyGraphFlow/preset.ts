@@ -1,14 +1,25 @@
-import type { PathPosition } from "./Connection/utils/path";
+import { linePathDraw, bezierPathDraw } from "@/components/MyGraphFlow";
+
+export const enum PathType {
+  Line = "line",
+  Bezier = "bezier",
+}
 
 export default {
-  GFConnectionPath: {
-    line: {
-      attributes: {
-        class: ["stroke-gray-400", "stroke-1"],
+  GFEdgePath: {
+    type: PathType.Line,
+    map: {
+      [PathType.Line]: {
+        attributes: {
+          class: ["stroke-gray-400", "stroke-1", "fill-transparent"],
+        },
+        pathDraw: linePathDraw,
       },
-      drawPath(position: PathPosition) {
-        const { sX, sY, tX, tY } = position;
-        return `M${sX},${sY} ${tX},${tY}`;
+      [PathType.Bezier]: {
+        attributes: {
+          class: ["stroke-gray-400", "stroke-1", "fill-transparent"],
+        },
+        pathDraw: bezierPathDraw,
       },
     },
   },

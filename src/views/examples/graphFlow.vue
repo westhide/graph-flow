@@ -1,8 +1,24 @@
 <script setup lang="ts">
-const pathOptions = {
-  position: { sX: 10, sY: 10, tX: 500, tY: 500 },
+import {
+  type PartialPathOpions,
+  Path,
+  PathType,
+  PathPositionType,
+} from "@/components/MyGraphFlow";
+
+const pathOptions: PartialPathOpions = {
+  type: PathType.Bezier,
+  position: {
+    type: PathPositionType.Right,
+    sourceX: 100,
+    sourceY: 100,
+    targetX: 500,
+    targetY: 500,
+  },
 };
+const path = new Path(pathOptions);
 function onClick() {
+  path.options.position.sourceX += 100;
   console.log("click");
 }
 </script>
@@ -10,6 +26,5 @@ function onClick() {
 <template>
   <MyGraphFlow v-bind="{ onClick }" />
   <MyGraphFlowNode />
-  <div>MyGraphFlowConnectionLine</div>
-  <MyGraphFlowConnectionPath :options="pathOptions" />
+  <MyGraphFlowEdgePath :path="path" />
 </template>
