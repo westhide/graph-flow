@@ -1,5 +1,11 @@
 import type { SVGAttributes, WatchStopHandle } from "vue";
-import Preset, { PathType } from "@/components/MyGraphFlow/preset";
+import type { MarkRequired } from "@/utils/UseType";
+import type {
+  PathType,
+  EndpointType,
+  EndpointPosition,
+} from "@/components/MyGraphFlow";
+import { Preset } from "@/components/MyGraphFlow";
 
 const { type: dfPathType, map: pathMap } = Preset.GFEdgePath;
 
@@ -31,17 +37,17 @@ export type PathOptions = {
   pathDraw: (position: PathPosition) => string;
 };
 
-export type PartialPathOpions = Partial<PathOptions>;
+export type PartialPathOptions = MarkRequired<Partial<PathOptions>, "position">;
 
 export class Path {
   options: PathOptions;
   stopWatch?: WatchStopHandle;
 
-  constructor(options: PartialPathOpions) {
+  constructor(options: PartialPathOptions) {
     const { type = dfPathType } = options;
     defaultsDeep(options, pathMap[type], { type });
 
-    this.options = reactive(<PathOptions>options);
+    this.options = reactive(options as PathOptions);
 
     const {
       position,
@@ -49,11 +55,6 @@ export class Path {
       attributes: { d },
       pathDraw,
     } = this.options;
-
-    if (position === undefined && d === undefined)
-      throw new Error(
-        "draw path undefinde,please set position or attributes.d"
-      );
 
     if (d === undefined) {
       if (position.type === undefined) position.type = PathPositionType.Right;
@@ -66,4 +67,36 @@ export class Path {
   get attributes() {
     return this.options.attributes;
   }
+
+  get position() {
+    return this.options.position;
+  }
+
+  moveEndpoint({ x, y }: EndpointPosition, type: EndpointType) {
+    this.options.position[`${type}X`] = x;
+    this.options.position[`${type}Y`] = y;
+  }
+
+  endpointPosition(type: EndpointType) {
+    return {
+      x: this.position[`${type}X`],
+      y: this.position[`${type}Y`],
+    };
+  }
 }
+
+export default defineComponent({
+  props: {
+    path: {
+      type: Path,
+      required: true,
+    },
+  },
+  setup({ path }) {
+    return () => (
+      <g>
+        <path {...path.attributes} />
+      </g>
+    );
+  },
+});

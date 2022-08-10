@@ -14,6 +14,7 @@ export default [
       "@vueuse/core",
       "vue-i18n",
       "vitest",
+      // TODO: auto import nest tsx components
     ],
     dts: "src/auto-imports.d.ts",
   }),

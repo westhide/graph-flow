@@ -1,4 +1,4 @@
-import type { DeepRequired, PickPropertierDeep } from "@/utils/UseType";
+import type { DeepPartial } from "@/utils/UseType";
 import { defaultsDeep as _defaultsDeep } from "lodash-es";
 
 export function objectKeys<T extends Record<string | number, unknown>>(
@@ -9,8 +9,8 @@ export function objectKeys<T extends Record<string | number, unknown>>(
 
 export function defaultsDeep<T extends object>(
   target: T,
-  ...sources: PickPropertierDeep<T, undefined>[]
+  ...sources: DeepPartial<T>[]
 ) {
   _defaultsDeep(target, ...sources);
-  return <DeepRequired<T>>target;
+  return target;
 }

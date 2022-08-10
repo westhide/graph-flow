@@ -249,14 +249,6 @@ export type OmitProperties<T, V> = Omit<T, PickKeysByValue<T, V>>;
 /** Pick all properties of given type in object type */
 export type PickProperties<T, V> = Pick<T, PickKeysByValue<T, V>>;
 
-export type PickPropertierDeep<T, V> = NonNever<{
-  [K in keyof T]: V extends T[K]
-    ? T[K]
-    : T[K] extends object
-    ? PickPropertierDeep<T[K], V>
-    : never;
-}>;
-
 /** Gets keys of an object which are optional */
 export type OptionalKeys<T> = T extends unknown
   ? {
@@ -572,3 +564,17 @@ export type PredicateType<T extends PredicateFunction> = T extends (
 ) => target is infer P
   ? P
   : never;
+
+// * Customize Append
+
+export type PickPropertiesDeep<T, V> = NonNever<{
+  [K in keyof T]: V extends T[K]
+    ? T[K]
+    : T[K] extends object
+    ? PickPropertiesDeep<T[K], V>
+    : never;
+}>;
+
+export type AnyFunction = (...arg: any[]) => any;
+
+export type ValueOfMap<M> = M extends Map<any, infer V> ? V : never;

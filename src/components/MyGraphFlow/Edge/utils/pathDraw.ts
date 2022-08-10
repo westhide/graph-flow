@@ -45,6 +45,8 @@ function getControlPoint({
       break;
     case PathPositionType.Float:
       break;
+    default:
+      throw new Error(`PathPositionType: "${type}" undefined`);
   }
   return {
     sourceControlX: scX,
