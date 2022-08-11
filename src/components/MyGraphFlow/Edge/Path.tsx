@@ -1,13 +1,11 @@
 import type { SVGAttributes, WatchStopHandle } from "vue";
 import type { MarkRequired } from "@/utils/UseType";
-import type {
-  PathType,
-  EndpointType,
-  EndpointPosition,
-} from "@/components/MyGraphFlow";
-import { Preset } from "@/components/MyGraphFlow";
+import type { EndpointType, EndpointPosition } from "@/components/MyGraphFlow";
 
-const { type: dfPathType, map: pathMap } = Preset.GFEdgePath;
+export const enum PathType {
+  Line = "line",
+  Bezier = "bezier",
+}
 
 export const enum PathPositionType {
   Left = "left",
@@ -31,6 +29,7 @@ export type PathPosition = {
 };
 
 export type PathOptions = {
+  id: string;
   type: PathType;
   position: PathPosition;
   attributes: SVGAttributes;
@@ -40,13 +39,17 @@ export type PathOptions = {
 export type PartialPathOptions = MarkRequired<Partial<PathOptions>, "position">;
 
 export class Path {
+  id: string;
   options: PathOptions;
-  stopWatch?: WatchStopHandle;
+  stopWatchDrawPath?: WatchStopHandle;
 
   constructor(options: PartialPathOptions) {
-    const { type = dfPathType } = options;
-    defaultsDeep(options, pathMap[type], { type });
+    const { path: pathPreset } = useGraphFlowStore().preset;
+    const { type = pathPreset.type } = options;
+    defaultsDeep(options, pathPreset.map[type], { type });
+    defaultNanoid(options);
 
+    this.id = options.id!;
     this.options = reactive(options as PathOptions);
 
     const {
@@ -58,7 +61,7 @@ export class Path {
 
     if (d === undefined) {
       if (position.type === undefined) position.type = PathPositionType.Right;
-      this.stopWatch = watchEffect(() => {
+      this.stopWatchDrawPath = watchEffect(() => {
         attributes.d = pathDraw(position);
       });
     }

@@ -1,30 +1,80 @@
 <script setup lang="ts">
-import {
-  type PartialPathOpions,
-  Path,
-  PathType,
-  PathPositionType,
-} from "@/components/MyGraphFlow";
+import { Path, PathType, PathPositionType } from "@/components/MyGraphFlow";
 
-const pathOptions: PartialPathOpions = {
+const { createEdges, edges } = useGraphFlowStore();
+
+const path = new Path({
   type: PathType.Bezier,
   position: {
-    type: PathPositionType.Right,
     sourceX: 100,
     sourceY: 100,
     targetX: 500,
     targetY: 500,
   },
-};
-const path = new Path(pathOptions);
+});
+
+createEdges([
+  {
+    path,
+    endpoints: {
+      source: {
+        draggable: true,
+      },
+      target: {
+        draggable: true,
+      },
+    },
+  },
+  {
+    path: {
+      position: {
+        type: PathPositionType.Top,
+        sourceX: 500,
+        sourceY: 100,
+        targetX: 100,
+        targetY: 500,
+      },
+    },
+    endpoints: {
+      source: {
+        draggable: true,
+      },
+      target: {
+        draggable: true,
+      },
+    },
+  },
+]);
+
 function onClick() {
-  path.options.position.sourceX += 100;
-  console.log("click");
+  createEdges([
+    {
+      path: {
+        position: {
+          type: PathPositionType.Top,
+          sourceX: 300,
+          sourceY: 300,
+          targetX: 600,
+          targetY: 600,
+        },
+      },
+      endpoints: {
+        source: {
+          draggable: true,
+        },
+        target: {
+          draggable: true,
+        },
+      },
+    },
+  ]);
+  console.log("click", edges);
 }
 </script>
 
 <template>
-  <MyGraphFlow v-bind="{ onClick }" />
+  <MyGraphFlow @click="onClick" />
   <MyGraphFlowNode />
-  <MyGraphFlowEdgePath :path="path" />
+  <div>Split</div>
+  <MyGraphFlowEdge />
 </template>

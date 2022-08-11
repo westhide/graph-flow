@@ -1,7 +1,7 @@
-import { PropType } from "vue";
+import type { MarkOptional } from "@/utils/UseType";
 import {
   Endpoint,
-  type EndpointOptions,
+  type PartialEndpointOptions,
   type EndpointType,
   type PartialPathOptions,
   Path,
@@ -11,77 +11,84 @@ import {
 import { default as MyGraphFlowContainerSVG } from "@/components/MyGraphFlow/Container/SVG.vue";
 import { default as MyGraphFlowEdgeEndpoint } from "@/components/MyGraphFlow/Edge/Endpoint";
 import { default as MyGraphFlowEdgePath } from "@/components/MyGraphFlow/Edge/Path";
-import { MarkOptional } from "@/utils/UseType";
+
+export type EdgeEndpointsOptions = Partial<
+  Record<EndpointType, MarkOptional<PartialEndpointOptions, "position">>
+>;
 
 export type EdgeOptions = {
+  id: string;
   path: PartialPathOptions;
-  endpoints?: Partial<
-    Record<EndpointType, MarkOptional<EndpointOptions, "position">>
-  >;
+  endpoints?: EdgeEndpointsOptions;
 };
 
+export type PartialEdgeOptions = MarkOptional<EdgeOptions, "id">;
+
 export class Edge {
+  id: string;
   path: Path;
   endpoints: Partial<Record<EndpointType, Endpoint>> = {};
 
-  constructor(options: EdgeOptions) {
-    const { path: pathOptions, endpoints: endpointsOptions } = options;
+  constructor(options: PartialEdgeOptions) {
+    const { id = nanoid(), path: path, endpoints } = options;
 
-    this.path = new Path(pathOptions);
+    this.id = id;
+    this.path = new Path(path);
 
-    if (endpointsOptions !== undefined) {
-      for (const [type, options] of Object.entries(endpointsOptions)) {
+    if (endpoints !== undefined) {
+      for (const [type, endpoint] of Object.entries(endpoints)) {
         const position = this.path.endpointPosition(type as EndpointType);
+
         this.endpoints[type as EndpointType] = new Endpoint({
           position,
-          ...options,
+          ...endpoint,
         });
+
         this._bindMoveEvent(type as EndpointType);
       }
     }
   }
 
-  protected _bindMoveEvent(type: EndpointType, key?: string) {
+  protected _bindMoveEvent(type: EndpointType) {
+    if (this.endpoints[type] === undefined)
+      throw new Error(`endpoint: "${type}" undefined`);
+
     return this.endpoints[type]!.setEvent(
       "move",
       (position) => this.path.moveEndpoint(position, type),
-      key
+      this.path.id
     );
   }
 }
 
-export function createEdges(optionsList: EdgeOptions[]) {
-  const edges = optionsList.map((options) => new Edge(options));
-
-  return reactive(edges);
-}
-
 export default defineComponent({
-  props: {
-    edges: {
-      type: Array as PropType<Edge[]>,
-      required: true,
-    },
-  },
-  setup: function ({ edges }) {
-    const pathElements = computed(() =>
-      edges.map(({ path }) => <MyGraphFlowEdgePath path={path} />)
-    );
+  setup: function () {
+    const { edges } = useGraphFlowStore();
 
-    const endpointElements = computed(() =>
-      edges.map(({ endpoints }) =>
-        Object.values(endpoints).map((endpoint) => {
+    const element = computed(() => {
+      const pathElements: JSX.Element[] = [],
+        endpointElements: JSX.Element[][] = [];
+
+      for (const { path, endpoints } of edges.values()) {
+        pathElements.push(<MyGraphFlowEdgePath path={path} />);
+
+        const endpointElement = Object.values(endpoints).map((endpoint) => {
           return <MyGraphFlowEdgeEndpoint endpoint={endpoint} />;
-        })
-      )
-    );
+        });
+        endpointElements.push(endpointElement);
+      }
+
+      return { pathElements, endpointElements };
+    });
 
     return () => (
       <>
         {/* * render svg container once, path should register here*/}
-        <MyGraphFlowContainerSVG>{pathElements.value}</MyGraphFlowContainerSVG>
+        <MyGraphFlowContainerSVG>
+          {element.value.pathElements}
+        </MyGraphFlowContainerSVG>
 
-        {endpointElements.value}
+        {element.value.endpointElements}
       </>
     );
   },

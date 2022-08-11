@@ -1,6 +1,6 @@
 import type { Ref, StyleValue, VNode } from "vue";
 import { EventMap } from "@/utils/UseEvent";
-import { ValueOfMap } from "@/utils/UseType";
+import { ValueOfMap, MarkOptional } from "@/utils/UseType";
 
 export type EndpointType = "source" | "target";
 export type EndpointPosition = {
@@ -13,16 +13,21 @@ export type EndpointMoveEvent = (
 ) => void;
 
 export type EndpointOptions = {
+  id: string;
   position: EndpointPosition;
   draggable?: boolean;
   slot?: VNode;
 };
+
+export type PartialEndpointOptions = MarkOptional<EndpointOptions, "id">;
 
 export type EndpointEvents = {
   move: EventMap<EndpointMoveEvent>;
 };
 
 export class Endpoint {
+  id: string;
+  el?: Ref<HTMLElement | undefined>;
   options: EndpointOptions;
   events: EndpointEvents = {
     move: new EventMap<EndpointMoveEvent>(),
@@ -37,7 +42,12 @@ export class Endpoint {
     return `left: ${x}px; top: ${y}px`;
   }
 
-  constructor(options: EndpointOptions) {
+  constructor(options: PartialEndpointOptions) {
+    const { endpoint: endpointPreset } = useGraphFlowStore().preset;
+    defaultsDeep(options, endpointPreset);
+    defaultNanoid(options);
+
+    this.id = options.id!;
     this.options = reactive(options as EndpointOptions);
   }
 
@@ -67,6 +77,7 @@ export class Endpoint {
       onMove: onMove.bind(this),
     });
 
+    this.el = el;
     this.setEvent(
       "move",
       (position) => (this.options.position = position),
@@ -87,13 +98,17 @@ export default defineComponent({
 
     endpoint.mount(el);
 
-    const Spot = (
-      <span class="absolute w-3 h-3  -translate-y-1/2 -translate-x-1/2 border-2 border-circle border-slate-400 bg-white shadow-inner shadow-blue-400" />
+    const EndpointSpot = (
+      <span class="absolute w-3 h-3 -translate-y-1/2 -translate-x-1/2 border-2 rounded-circle border-slate-400 bg-white shadow-inner shadow-blue-400 select-none" />
     );
 
     return () => (
-      <div ref={el} style={endpoint.anchor} class="absolute cursor-pointer z-1">
-        {endpoint.options.slot ?? Spot}
+      <div
+        ref={el}
+        style={endpoint.anchor}
+        class="absolute cursor-pointer z-[1]"
+      >
+        {endpoint.options.slot ?? EndpointSpot}
       </div>
     );
   },
