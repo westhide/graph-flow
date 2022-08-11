@@ -5,5 +5,6 @@ export default [
   Vue({
     reactivityTransform: true,
   }),
+
   VueJsx(),
 ];

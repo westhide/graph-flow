@@ -5,7 +5,7 @@ import IconsResolver from "unplugin-icons/resolver";
 
 export default [
   AutoImport({
-    dirs: ["src/composables", "src/utils"],
+    dirs: ["src/composables", "src/stores", "src/utils"],
     imports: [
       "vue",
       "vue/macros",
@@ -18,6 +18,7 @@ export default [
     ],
     dts: "src/auto-imports.d.ts",
   }),
+
   Components({
     dirs: ["src/components"],
     extensions: ["vue", "tsx"],
@@ -31,6 +32,7 @@ export default [
     include: [/\.vue$/, /\.vue\?vue/, /\.tsx$/],
     exclude: [/[\\/]node_modules[\\/]/, /[\\/]\.git[\\/]/, /[\\/]\.nuxt[\\/]/],
   }),
+
   Icons({
     autoInstall: true,
   }),

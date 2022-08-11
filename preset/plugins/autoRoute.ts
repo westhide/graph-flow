@@ -7,6 +7,7 @@ export default [
     exclude: ["./*/**.*"],
     defaultLayout: "Default",
   }),
+
   Pages({
     dirs: [
       "src/views/pages",
