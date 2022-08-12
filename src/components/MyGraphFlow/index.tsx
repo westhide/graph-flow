@@ -9,8 +9,6 @@ export {
 } from "./Edge/Path";
 export {
   type EndpointType,
-  type EndpointPosition,
-  type EndpointMoveEvent,
   type EndpointOptions,
   type PartialEndpointOptions,
   Endpoint,
@@ -22,6 +20,12 @@ export {
   Edge,
 } from "./Edge";
 export { type NodeOptions, type PartialNodeOptions, Node } from "./Node";
+
+/*  common  */
+export type Position = {
+  x: number;
+  y: number;
+};
 
 /*  script  */
 import type { MarkOptional } from "@/utils/UseType";
@@ -52,6 +56,7 @@ export type Relation = {
 
 export type GraphFlowOptions = {
   type?: GraphFlowType;
+  nodes?: PartialNodeOptions[];
   relations: MarkOptional<Relation, "id">[];
 };
 
@@ -68,10 +73,16 @@ export class GraphFlow {
   relations: Map<string, GraphFlowRelation> = new Map();
 
   constructor(options: GraphFlowOptions) {
-    const { type = "digraph", relations } = options;
+    const {
+      useNodes,
+      createEdges,
+      preset: { graphFlowType },
+    } = useGraphFlowStore();
+
+    const { type = graphFlowType, nodes, relations } = options;
     this.type = type;
 
-    const { useNodes, createEdges } = useGraphFlowStore();
+    if (nodes !== undefined) useNodes(nodes);
 
     for (const relation of relations) {
       defaultNanoid(relation);
@@ -79,16 +90,12 @@ export class GraphFlow {
       const { id, source, target, edge: edgeOptions = {} } = relation;
       const [sourceNode, targetNode] = useNodes([source, target]);
 
-      const { x: sourceX, y: sourceY } = sourceNode!.position;
-      const { x: targetX, y: targetY } = targetNode!.position;
-      const position = {
-        sourceX,
-        sourceY,
-        targetX,
-        targetY,
+      const positions = {
+        source: sourceNode!.position,
+        target: targetNode!.position,
       };
       edgeOptions.path = {
-        position,
+        positions,
         ...edgeOptions.path,
       };
       const edge = createEdges(edgeOptions as PartialEdgeOptions);
@@ -115,16 +122,8 @@ export class GraphFlow {
       target,
       edge: { path },
     } = relation;
-    source.setEvent(
-      "move",
-      (position) => path.moveEndpoint(position, "source"),
-      path.id
-    );
-    target.setEvent(
-      "move",
-      (position) => path.moveEndpoint(position, "target"),
-      path.id
-    );
+    source.bindPathMoveEvent(path, "source");
+    target.bindPathMoveEvent(path, "target");
   }
 }
 
@@ -146,10 +145,10 @@ export default defineComponent({
     });
 
     return () => (
-      <>
-        {nodeElements.value}
+      <div class="relative">
+        <div>{nodeElements.value}</div>
         <MyGraphFlowEdge />
-      </>
+      </div>
     );
   },
 });

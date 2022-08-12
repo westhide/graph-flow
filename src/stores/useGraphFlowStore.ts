@@ -5,6 +5,7 @@ import {
   linePathDraw,
   bezierPathDraw,
   PathType,
+  PathPositionType,
   Edge,
   Node,
   GraphFlow,
@@ -12,8 +13,10 @@ import {
 
 export default defineStore("graphFlow", () => {
   const preset = {
+    graphFlowType: "digraph" as const,
     path: {
       type: PathType.Bezier,
+      positionType: PathPositionType.Right,
       map: {
         [PathType.Line]: {
           attributes: {
@@ -33,6 +36,7 @@ export default defineStore("graphFlow", () => {
       draggable: false,
     },
     node: {
+      label: "Node",
       draggable: true,
     },
   };

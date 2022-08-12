@@ -1,37 +1,31 @@
 import type { Ref, StyleValue, VNode } from "vue";
-import { EventMap } from "@/utils/UseEvent";
-import { ValueOfMap, MarkOptional } from "@/utils/UseType";
+import type { MarkOptional } from "@/utils/UseType";
+import type { Path, Position } from "@/components/MyGraphFlow";
+import { type EventOptions, EventHandler } from "@/utils/UseEvent";
 
 export type EndpointType = "source" | "target";
-export type EndpointPosition = {
-  x: number;
-  y: number;
-};
-export type EndpointMoveEvent = (
-  position: EndpointPosition,
-  event: PointerEvent
-) => void;
 
 export type EndpointOptions = {
   id: string;
-  position: EndpointPosition;
+  position: Position;
   draggable?: boolean;
   slot?: VNode;
 };
 
 export type PartialEndpointOptions = MarkOptional<EndpointOptions, "id">;
 
-export type EndpointEvents = {
-  move: EventMap<EndpointMoveEvent>;
+type MoveEventMapKey = object | string;
+type MoveCallback = (position: Position, event: PointerEvent) => void;
+
+type EventHandlerOptions = {
+  move: { key: MoveEventMapKey; options: EventOptions<MoveCallback> };
 };
 
 export class Endpoint {
   id: string;
   el?: Ref<HTMLElement | undefined>;
   options: EndpointOptions;
-  events: EndpointEvents = {
-    move: new EventMap<EndpointMoveEvent>(),
-  };
+  eventHandler: EventHandler<EventHandlerOptions>;
 
   get position() {
     return this.options.position;
@@ -43,6 +37,8 @@ export class Endpoint {
   }
 
   constructor(options: PartialEndpointOptions) {
+    this.eventHandler = new EventHandler(["move"]);
+
     const { endpoint: endpointPreset } = useGraphFlowStore().preset;
     defaultsDeep(options, endpointPreset);
     defaultNanoid(options);
@@ -51,26 +47,20 @@ export class Endpoint {
     this.options = reactive(options as EndpointOptions);
   }
 
-  triggerEvents(
-    type: keyof EndpointEvents,
-    ...arg: Parameters<ValueOfMap<EndpointEvents[typeof type]["eventMap"]>>
-  ) {
-    this.events[type].triggerAll(...arg);
-  }
-
-  setEvent(type: keyof EndpointEvents, event: EndpointMoveEvent, key?: string) {
-    return this.events[type].set(key, event);
-  }
-
-  deleteEvent(type: keyof EndpointEvents, key: string) {
-    return this.events[type].delete(key);
+  bindPathMoveEvent(path: Path, type: EndpointType) {
+    const unTraceCallback = this.eventHandler.set(
+      "move",
+      (position) => path.moveEndpoint(position, type),
+      path
+    );
+    path.eventHandler.set("unTraceMove", unTraceCallback, this);
   }
 
   mount(el: Ref<HTMLElement | undefined>) {
     if (!this.options.draggable) return;
 
-    const onMove: EndpointMoveEvent = (...arg) =>
-      this.triggerEvents("move", ...arg);
+    const onMove: MoveCallback = (...arg) =>
+      this.eventHandler.trigger("move", ...arg);
 
     useDraggable(el, {
       initialValue: this.position,
@@ -78,7 +68,7 @@ export class Endpoint {
     });
 
     this.el = el;
-    this.setEvent(
+    this.eventHandler.set(
       "move",
       (position) => (this.options.position = position),
       "default"

@@ -30,9 +30,10 @@ export class Edge {
   endpoints: Partial<Record<EndpointType, Endpoint>> = {};
 
   constructor(options: PartialEdgeOptions) {
-    const { id = nanoid(), path: path, endpoints } = options;
+    defaultNanoid(options);
+    const { id, path: path, endpoints } = options;
 
-    this.id = id;
+    this.id = id!;
     this.path = new Path(path);
 
     if (endpoints !== undefined) {
@@ -53,11 +54,7 @@ export class Edge {
     if (this.endpoints[type] === undefined)
       throw new Error(`endpoint: "${type}" undefined`);
 
-    return this.endpoints[type]!.setEvent(
-      "move",
-      (position) => this.path.moveEndpoint(position, type),
-      this.path.id
-    );
+    this.endpoints[type]!.bindPathMoveEvent(this.path, type);
   }
 }
 
@@ -84,7 +81,7 @@ export default defineComponent({
     return () => (
       <>
         {/* * render svg container once, path should register here*/}
-        <MyGraphFlowContainerSVG>
+        <MyGraphFlowContainerSVG class="h-full w-full">
           {element.value.pathElements}
         </MyGraphFlowContainerSVG>
 

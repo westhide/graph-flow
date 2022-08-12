@@ -1,12 +1,7 @@
 import { type PathPosition, PathPositionType } from "@/components/MyGraphFlow";
 
-export function linePathDraw({
-  sourceX,
-  sourceY,
-  targetX,
-  targetY,
-}: PathPosition) {
-  return `M${sourceX},${sourceY} ${targetX},${targetY}`;
+export function linePathDraw({ source, target }: PathPosition) {
+  return `M${source.x},${source.y} ${target.x},${target.y}`;
 }
 
 function controlOffset(distance: number, curvature: number) {
@@ -17,10 +12,8 @@ function controlOffset(distance: number, curvature: number) {
 
 function getControlPoint({
   type,
-  sourceX: scX,
-  sourceY: scY,
-  targetX: tcX,
-  targetY: tcY,
+  source: { x: scX, y: scY },
+  target: { x: tcX, y: tcY },
   curvature = 0.25,
 }: PathPosition) {
   const xOffset = controlOffset(scX - tcX, curvature);
@@ -49,24 +42,16 @@ function getControlPoint({
       throw new Error(`PathPositionType: "${type}" undefined`);
   }
   return {
-    sourceControlX: scX,
-    sourceControlY: scY,
-    targetControlX: tcX,
-    targetControlY: tcY,
+    sourceControl: { x: scX, y: scY },
+    targetControl: { x: tcX, y: tcY },
   };
 }
 
 export function bezierPathDraw(position: PathPosition) {
   const controlPoint = getControlPoint(position);
-  const {
-    sourceX,
-    sourceY,
-    targetX,
-    targetY,
-    sourceControlX,
-    sourceControlY,
-    targetControlX,
-    targetControlY,
-  } = { ...controlPoint, ...position };
-  return `M${sourceX},${sourceY} C${sourceControlX},${sourceControlY} ${targetControlX},${targetControlY} ${targetX},${targetY}`;
+  const { source, target, sourceControl, targetControl } = {
+    ...controlPoint,
+    ...position,
+  };
+  return `M${source.x},${source.y} C${sourceControl.x},${sourceControl.y} ${targetControl.x},${targetControl.y} ${target.x},${target.y}`;
 }
