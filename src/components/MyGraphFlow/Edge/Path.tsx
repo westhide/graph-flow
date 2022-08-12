@@ -1,5 +1,5 @@
 import type { SVGAttributes, WatchStopHandle } from "vue";
-import type { MarkRequired } from "@/utils/UseType";
+import type { Merge, MarkOptional } from "@/utils/UseType";
 import type { EndpointType, Position } from "@/components/MyGraphFlow";
 import { type EventOptions, EventHandler } from "@/utils/UseEvent";
 
@@ -17,12 +17,14 @@ export const enum PathPositionType {
 }
 
 export type PathPosition = {
-  type?: PathPositionType;
+  type: PathPositionType;
   source: Position;
   target: Position;
   sourceControl?: Position;
   targetControl?: Position;
-  curvature?: number;
+  sourceOffset: Position;
+  targetOffset: Position;
+  curvature: number;
 };
 
 export type PathOptions = {
@@ -33,9 +35,15 @@ export type PathOptions = {
   pathDraw: (position: PathPosition) => string;
 };
 
-export type PartialPathOptions = MarkRequired<
+type PartialPathPosition = {
+  positions: MarkOptional<
+    PathPosition,
+    "type" | "sourceOffset" | "targetOffset" | "curvature"
+  >;
+};
+export type PartialPathOptions = Merge<
   Partial<PathOptions>,
-  "positions"
+  PartialPathPosition
 >;
 
 type MoveEventMapKey = object | string;
@@ -62,7 +70,12 @@ export class Path {
 
     const { path: pathPreset } = useGraphFlowStore().preset;
     const { type = pathPreset.type } = options;
-    defaultsDeep(options, pathPreset.map[type], { type });
+    defaultsDeep(
+      options,
+      pathPreset.map[type],
+      { positions: pathPreset.positions },
+      { type }
+    );
     defaultNanoid(options);
 
     this.id = options.id!;
@@ -76,9 +89,6 @@ export class Path {
     } = this.options;
 
     if (d === undefined) {
-      if (positions.type === undefined)
-        positions.type = pathPreset.positionType;
-
       this.stopWatchDrawPath = watchEffect(() => {
         attributes.d = pathDraw(positions);
       });
@@ -113,7 +123,7 @@ export default defineComponent({
   setup({ path }) {
     return () => (
       <g>
-        <path {...path.attributes} />
+        <path {...path.attributes} data-path-id={path.id} />
       </g>
     );
   },

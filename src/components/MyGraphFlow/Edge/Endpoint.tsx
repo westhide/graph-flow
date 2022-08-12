@@ -23,7 +23,7 @@ type EventHandlerOptions = {
 
 export class Endpoint {
   id: string;
-  el?: Ref<HTMLElement | undefined>;
+  el?: Ref<HTMLElement | undefined> | HTMLElement;
   options: EndpointOptions;
   eventHandler: EventHandler<EventHandlerOptions>;
 
@@ -57,6 +57,8 @@ export class Endpoint {
   }
 
   mount(el: Ref<HTMLElement | undefined>) {
+    this.el = el;
+
     if (!this.options.draggable) return;
 
     const onMove: MoveCallback = (...arg) =>
@@ -67,7 +69,6 @@ export class Endpoint {
       onMove: onMove.bind(this),
     });
 
-    this.el = el;
     this.eventHandler.set(
       "move",
       (position) => (this.options.position = position),
@@ -96,7 +97,8 @@ export default defineComponent({
       <div
         ref={el}
         style={endpoint.anchor}
-        class="absolute cursor-pointer z-[1]"
+        data-endpoint-id={endpoint.id}
+        class="absolute cursor-pointer z-[2]"
       >
         {endpoint.options.slot ?? EndpointSpot}
       </div>

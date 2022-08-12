@@ -1,6 +1,11 @@
 import type { Ref, StyleValue, VNode } from "vue";
 import type { MarkOptional } from "@/utils/UseType";
-import type { Path, EndpointType, Position } from "@/components/MyGraphFlow";
+import {
+  type Path,
+  type EndpointType,
+  type Position,
+  getPathOffset,
+} from "@/components/MyGraphFlow";
 import { type EventOptions, EventHandler } from "@/utils/UseEvent";
 
 export type NodeOptions = {
@@ -18,11 +23,12 @@ type MoveCallback = (position: Position, event: PointerEvent) => void;
 
 type EventHandlerOptions = {
   move: { key: MoveEventMapKey; options: EventOptions<MoveCallback> };
+  // BoundingClientRect:{}
 };
 
 export class Node {
   id: string;
-  el?: Ref<HTMLElement | undefined>;
+  el?: Ref<HTMLElement | undefined> | HTMLElement;
   options: NodeOptions;
   eventHandler: EventHandler<EventHandlerOptions>;
 
@@ -55,7 +61,24 @@ export class Node {
     path.eventHandler.set("unTraceMove", unTraceCallback, this);
   }
 
+  // TODO: use element resize listener
+  bindPathOffset(path: Path, type: EndpointType) {
+    watchPostEffect(() => {
+      if (this.el) {
+        const { positions } = path.options;
+        const rect = (this.el as HTMLElement).getBoundingClientRect();
+
+        const { type: positionType } = positions;
+
+        positions[`${type}Offset`] = getPathOffset(rect, positionType, type);
+      }
+      stop();
+    });
+  }
+
   mount(el: Ref<HTMLElement | undefined>) {
+    this.el = el;
+
     if (!this.options.draggable) return;
 
     const onMove: MoveCallback = (...arg) =>
@@ -66,7 +89,6 @@ export class Node {
       onMove: onMove.bind(this),
     });
 
-    this.el = el;
     this.eventHandler.set(
       "move",
       (position) => (this.options.position = position),
@@ -84,11 +106,13 @@ export default defineComponent({
   },
   setup({ node }) {
     const el = ref<HTMLElement>();
-    const { label } = useGraphFlowStore().preset.node;
+
     node.mount(el);
 
+    const { label } = useGraphFlowStore().preset.node;
+
     const NodeElement = computed(() => (
-      <div class="px-1 -translate-y-1/2 -translate-x-1/2 border border-slate-300 rounded-[2px] bg-gray-100 select-none">
+      <div class="px-1 border border-slate-300 rounded-[2px] bg-gray-100 select-none">
         <span>{node.options.label ?? label}</span>
         <span class="text-xs">{`<${node.options.id}>`}</span>
       </div>
@@ -98,7 +122,8 @@ export default defineComponent({
       <div
         ref={el}
         style={node.anchor}
-        class="absolute cursor-grab focus:cursor-grabbing z-[2]"
+        data-node-id={node.id}
+        class="absolute cursor-grab shadow z-[1]"
       >
         {node.options.slot ?? NodeElement.value}
       </div>

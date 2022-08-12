@@ -1,4 +1,8 @@
-export { linePathDraw, bezierPathDraw } from "./Edge/utils/pathDraw";
+export {
+  getPathOffset,
+  linePathDraw,
+  bezierPathDraw,
+} from "./Edge/utils/pathDraw";
 export {
   type PathPosition,
   type PathOptions,
@@ -30,7 +34,7 @@ export type Position = {
 /*  script  */
 import type { MarkOptional } from "@/utils/UseType";
 import {
-  type PathOptions,
+  type PartialPathOptions,
   type PartialEdgeOptions,
   type EdgeEndpointsOptions,
   type PartialNodeOptions,
@@ -42,88 +46,100 @@ export type GraphFlowType = "digraph" | "undigraph" | "tree";
 
 type RelationEdgeOptions = {
   id?: string;
-  path?: Partial<PathOptions>;
+  path?: MarkOptional<PartialPathOptions, "positions">;
   endpoints?: EdgeEndpointsOptions;
 };
 
-export type Relation = {
-  id: string;
+export type RelationOptions = {
+  id?: string;
   source: PartialNodeOptions | string;
   target: PartialNodeOptions | string;
   edge?: RelationEdgeOptions;
   weight?: number;
 };
 
-export type GraphFlowOptions = {
-  type?: GraphFlowType;
-  nodes?: PartialNodeOptions[];
-  relations: MarkOptional<Relation, "id">[];
-};
-
-type GraphFlowRelation = {
+export class Relation {
   id: string;
   source: Node;
   target: Node;
   edge: Edge;
   weight?: number;
+
+  constructor(options: RelationOptions) {
+    defaultNanoid(options);
+
+    const { useNodes, createEdges } = useGraphFlowStore();
+
+    const { id, source, target, edge: edgeOptions = {}, weight } = options;
+    const sourceNode = useNodes(source);
+    const targetNode = useNodes(target);
+
+    const positions = {
+      source: sourceNode.position,
+      target: targetNode.position,
+    };
+    edgeOptions.path = {
+      positions,
+      ...edgeOptions.path,
+    };
+
+    const edge = createEdges(edgeOptions as PartialEdgeOptions);
+
+    this.id = id!;
+    this.source = sourceNode;
+    this.target = targetNode;
+    this.edge = edge;
+    this.weight = weight;
+
+    this._bindEvent();
+  }
+
+  protected _bindEvent() {
+    const { path } = this.edge;
+    this.source.bindPathMoveEvent(path, "source");
+    this.target.bindPathMoveEvent(path, "target");
+
+    this.source.bindPathOffset(path, "source");
+    this.target.bindPathOffset(path, "target");
+  }
+}
+
+export type GraphFlowOptions = {
+  type?: GraphFlowType;
+  nodes?: PartialNodeOptions[];
+  relations: RelationOptions[];
 };
 
 export class GraphFlow {
   type: GraphFlowType;
-  relations: Map<string, GraphFlowRelation> = new Map();
+  nodes: Map<string, Node>;
+  edges: Map<string, Edge>;
+  relations: Map<string, Relation>;
 
   constructor(options: GraphFlowOptions) {
     const {
+      nodes,
+      edges,
+      relations,
+      createRelations,
       useNodes,
-      createEdges,
       preset: { graphFlowType },
     } = useGraphFlowStore();
 
-    const { type = graphFlowType, nodes, relations } = options;
-    this.type = type;
-
-    if (nodes !== undefined) useNodes(nodes);
-
-    for (const relation of relations) {
-      defaultNanoid(relation);
-
-      const { id, source, target, edge: edgeOptions = {} } = relation;
-      const [sourceNode, targetNode] = useNodes([source, target]);
-
-      const positions = {
-        source: sourceNode!.position,
-        target: targetNode!.position,
-      };
-      edgeOptions.path = {
-        positions,
-        ...edgeOptions.path,
-      };
-      const edge = createEdges(edgeOptions as PartialEdgeOptions);
-
-      this.relations.set(id!, {
-        ...relation,
-        source: sourceNode,
-        target: targetNode,
-        edge: edge,
-      } as GraphFlowRelation);
-
-      this._bindMoveEvent(id!);
-    }
-  }
-
-  protected _bindMoveEvent(relationId: string) {
-    const relation = this.relations.get(relationId);
-
-    if (relation === undefined)
-      throw new Error(`relation: "${relationId}" undefined`);
-
     const {
-      source,
-      target,
-      edge: { path },
-    } = relation;
-    source.bindPathMoveEvent(path, "source");
-    target.bindPathMoveEvent(path, "target");
+      type = graphFlowType,
+      nodes: nodesOptions,
+      relations: relationsOptions,
+    } = options;
+
+    if (nodes !== undefined) useNodes(nodesOptions!);
+
+    createRelations(relationsOptions);
+
+    this.type = type;
+    this.nodes = nodes;
+    this.edges = edges;
+    this.relations = relations;
   }
 }
 

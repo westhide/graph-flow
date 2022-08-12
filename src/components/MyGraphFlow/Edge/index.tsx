@@ -31,18 +31,18 @@ export class Edge {
 
   constructor(options: PartialEdgeOptions) {
     defaultNanoid(options);
-    const { id, path: path, endpoints } = options;
+    const { id, path: pathOptions, endpoints: endpointsOptions } = options;
 
     this.id = id!;
-    this.path = new Path(path);
+    this.path = new Path(pathOptions);
 
-    if (endpoints !== undefined) {
-      for (const [type, endpoint] of Object.entries(endpoints)) {
+    if (endpointsOptions !== undefined) {
+      for (const [type, endpointOptions] of Object.entries(endpointsOptions)) {
         const position = this.path.endpointPosition(type as EndpointType);
 
         this.endpoints[type as EndpointType] = new Endpoint({
           position,
-          ...endpoint,
+          ...endpointOptions,
         });
 
         this._bindMoveEvent(type as EndpointType);
