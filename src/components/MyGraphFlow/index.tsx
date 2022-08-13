@@ -79,6 +79,7 @@ export class Relation {
       target: targetNode.position,
     };
     edgeOptions.path = {
+      id: `${sourceNode.id},${targetNode.id}`,
       positions,
       ...edgeOptions.path,
     };
@@ -91,13 +92,13 @@ export class Relation {
     this.edge = edge;
     this.weight = weight;
 
-    this._bindEvent();
+    this._bindMoveEvent();
   }
 
-  protected _bindEvent() {
+  protected _bindMoveEvent() {
     const { path } = this.edge;
-    this.source.bindPathMoveEvent(path, "source");
-    this.target.bindPathMoveEvent(path, "target");
+    this.source.bindPathEndpointPosition(path, "source");
+    this.target.bindPathEndpointPosition(path, "target");
 
     this.source.bindPathOffset(path, "source");
     this.target.bindPathOffset(path, "target");

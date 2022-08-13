@@ -38,7 +38,7 @@ export class Edge {
 
     if (endpointsOptions !== undefined) {
       for (const [type, endpointOptions] of Object.entries(endpointsOptions)) {
-        const position = this.path.endpointPosition(type as EndpointType);
+        const position = this.path.getPosition(type as EndpointType);
 
         this.endpoints[type as EndpointType] = new Endpoint({
           position,
@@ -54,7 +54,7 @@ export class Edge {
     if (this.endpoints[type] === undefined)
       throw new Error(`endpoint: "${type}" undefined`);
 
-    this.endpoints[type]!.bindPathMoveEvent(this.path, type);
+    this.endpoints[type]!.bindPathEndpointPosition(this.path, type);
   }
 }
 
@@ -80,7 +80,7 @@ export default defineComponent({
 
     return () => (
       <>
-        {/* * render svg container once, path should register here*/}
+        {/* * render svg container once, path should register here */}
         <MyGraphFlowContainerSVG class="h-full w-full">
           {element.value.pathElements}
         </MyGraphFlowContainerSVG>

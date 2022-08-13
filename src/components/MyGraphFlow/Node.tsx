@@ -18,12 +18,13 @@ export type NodeOptions = {
 
 export type PartialNodeOptions = MarkOptional<NodeOptions, "id">;
 
-type MoveEventMapKey = object | string;
+type EventMapKey = object | string;
 type MoveCallback = (position: Position, event: PointerEvent) => void;
+type ResizeCallback = (rect: DOMRect) => void;
 
 type EventHandlerOptions = {
-  move: { key: MoveEventMapKey; options: EventOptions<MoveCallback> };
-  // BoundingClientRect:{}
+  move: { key: EventMapKey; options: EventOptions<MoveCallback> };
+  resize: { key: EventMapKey; options: EventOptions<ResizeCallback> };
 };
 
 export class Node {
@@ -31,6 +32,8 @@ export class Node {
   el?: Ref<HTMLElement | undefined> | HTMLElement;
   options: NodeOptions;
   eventHandler: EventHandler<EventHandlerOptions>;
+
+  resizeObserver?: ResizeObserver;
 
   get position() {
     return this.options.position;
@@ -42,7 +45,7 @@ export class Node {
   }
 
   constructor(options: PartialNodeOptions) {
-    this.eventHandler = new EventHandler(["move"]);
+    this.eventHandler = new EventHandler(["move", "resize"]);
 
     const { node: nodePreset } = useGraphFlowStore().preset;
     defaultsDeep(options, nodePreset);
@@ -52,35 +55,40 @@ export class Node {
     this.options = reactive(options as NodeOptions);
   }
 
-  bindPathMoveEvent(path: Path, type: EndpointType) {
+  bindPathEndpointPosition(path: Path, type: EndpointType) {
     const unTraceCallback = this.eventHandler.set(
       "move",
-      (position) => path.moveEndpoint(position, type),
+      (position) => path.movePosition(position, type),
       path
     );
     path.eventHandler.set("unTraceMove", unTraceCallback, this);
   }
 
-  // TODO: use element resize listener
   bindPathOffset(path: Path, type: EndpointType) {
-    watchPostEffect(() => {
-      if (this.el) {
-        const { positions } = path.options;
-        const rect = (this.el as HTMLElement).getBoundingClientRect();
-
-        const { type: positionType } = positions;
+    const unTraceCallback = this.eventHandler.set(
+      "resize",
+      (rect) => {
+        const {
+          positions,
+          positions: { type: positionType },
+        } = path.options;
 
         positions[`${type}Offset`] = getPathOffset(rect, positionType, type);
-      }
-      stop();
-    });
+      },
+      path
+    );
+    path.eventHandler.set("unTraceResize", unTraceCallback, this);
   }
 
-  mount(el: Ref<HTMLElement | undefined>) {
-    this.el = el;
+  protected _observerResize() {
+    this.resizeObserver = new ResizeObserver(([entry]) => {
+      if (entry) this.eventHandler.trigger("resize", entry.contentRect);
+    });
+    this.resizeObserver.observe(this.el as HTMLElement);
+  }
 
-    if (!this.options.draggable) return;
-
+  // TODO: fix useDraggable must el Ref<HTMLElement>
+  protected _observerDrag(el: Ref<HTMLElement | undefined>) {
     const onMove: MoveCallback = (...arg) =>
       this.eventHandler.trigger("move", ...arg);
 
@@ -94,6 +102,13 @@ export class Node {
       (position) => (this.options.position = position),
       "default"
     );
+  }
+
+  mount(el: Ref<HTMLElement | undefined>) {
+    this.el = el;
+    if (this.options.draggable) this._observerDrag(el);
+
+    onMounted(() => this._observerResize());
   }
 }
 

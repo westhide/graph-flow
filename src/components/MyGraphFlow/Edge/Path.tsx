@@ -1,5 +1,5 @@
 import type { SVGAttributes, WatchStopHandle } from "vue";
-import type { Merge, MarkOptional } from "@/utils/UseType";
+import type { Merge, MarkOptional, PickKeysByValue } from "@/utils/UseType";
 import type { EndpointType, Position } from "@/components/MyGraphFlow";
 import { type EventOptions, EventHandler } from "@/utils/UseEvent";
 
@@ -26,6 +26,10 @@ export type PathPosition = {
   targetOffset: Position;
   curvature: number;
 };
+type PathPositionMoveType = Exclude<
+  PickKeysByValue<PathPosition, Position>,
+  undefined
+>;
 
 export type PathOptions = {
   id: string;
@@ -46,16 +50,14 @@ export type PartialPathOptions = Merge<
   PartialPathPosition
 >;
 
-type MoveEventMapKey = object | string;
+type EventMapKey = object | string;
 type MoveCallback = (position: Position, type: EndpointType) => void;
-type unTraceMoveCallback = () => void;
+type unTraceEventOptions = EventOptions<() => void>;
 
 type EventHandlerOptions = {
-  move: { key: MoveEventMapKey; options: EventOptions<MoveCallback> };
-  unTraceMove: {
-    key: MoveEventMapKey;
-    options: EventOptions<unTraceMoveCallback>;
-  };
+  move: { key: EventMapKey; options: EventOptions<MoveCallback> };
+  unTraceMove: { key: EventMapKey; options: unTraceEventOptions };
+  unTraceResize: { key: EventMapKey; options: unTraceEventOptions };
 };
 
 export class Path {
@@ -66,14 +68,18 @@ export class Path {
   stopWatchDrawPath?: WatchStopHandle;
 
   constructor(options: PartialPathOptions) {
-    this.eventHandler = new EventHandler(["move", "unTraceMove"]);
+    this.eventHandler = new EventHandler([
+      "move",
+      "unTraceMove",
+      "unTraceResize",
+    ]);
 
     const { path: pathPreset } = useGraphFlowStore().preset;
     const { type = pathPreset.type } = options;
     defaultsDeep(
       options,
       pathPreset.map[type],
-      { positions: pathPreset.positions },
+      { positions: cloneDeep(pathPreset.positions) },
       { type }
     );
     defaultNanoid(options);
@@ -103,12 +109,12 @@ export class Path {
     return this.options.positions;
   }
 
-  moveEndpoint(position: Partial<Position>, type: EndpointType) {
+  movePosition(position: Partial<Position>, type: PathPositionMoveType) {
     const currentPosition = this.positions[type];
     this.options.positions[type] = { ...currentPosition, ...position };
   }
 
-  endpointPosition(type: EndpointType) {
+  getPosition(type: PathPositionMoveType) {
     return this.positions[type];
   }
 }

@@ -239,7 +239,7 @@ export type StrictExtract<T, U extends Partial<T>> = Extract<T, U>;
 /** Similar to the builtin Exclude, but checks the filter strictly */
 export type StrictExclude<T, U extends T> = Exclude<T, U>;
 
-type PickKeysByValue<T, V> = {
+export type PickKeysByValue<T, V> = {
   [K in keyof T]: T[K] extends V ? K : never;
 }[keyof T];
 

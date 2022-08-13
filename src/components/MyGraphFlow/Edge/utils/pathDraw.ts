@@ -5,6 +5,7 @@ import {
   PathPositionType,
 } from "@/components/MyGraphFlow";
 
+/** calculate path offset with different PathPositionType */
 export function getPathOffset(
   rect: DOMRect,
   positionType: PathPositionType,
@@ -38,10 +39,10 @@ export function getPathOffset(
   return { x, y };
 }
 
+/** merge source&target point offset */
 function _mergeOffset(raw: Position, offset: Position) {
   return { x: raw.x + offset.x, y: raw.y + offset.y };
 }
-
 function mergeOffset(positions: PathPosition) {
   const { source, sourceOffset, target, targetOffset } = positions;
   return {
@@ -51,17 +52,13 @@ function mergeOffset(positions: PathPosition) {
   };
 }
 
-export function linePathDraw(positions: PathPosition) {
-  const { source, target } = mergeOffset(positions);
-  return `M${source.x},${source.y} ${target.x},${target.y}`;
-}
-
+/** calculate PathType.Bezier control point offset */
 function controlOffset(distance: number, curvature: number) {
   const offsetA = 0.5 * distance;
   const offsetB = curvature * 25 * Math.sqrt(-distance);
   return distance >= 0 ? offsetA : offsetB;
 }
-
+/** calculate PathType.Bezier control point position */
 function getControlPoint({
   type,
   source: { x: scX, y: scY },
@@ -99,6 +96,13 @@ function getControlPoint({
   };
 }
 
+/** ## PathType.Line path draw */
+export function linePathDraw(positions: PathPosition) {
+  const { source, target } = mergeOffset(positions);
+  return `M${source.x},${source.y} ${target.x},${target.y}`;
+}
+
+/** ## PathType.Bezier path draw */
 export function bezierPathDraw(position: PathPosition) {
   position = mergeOffset(position);
 

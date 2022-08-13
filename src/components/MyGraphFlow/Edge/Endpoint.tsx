@@ -1,3 +1,4 @@
+// TODO: class Endpoint extends Node
 import type { Ref, StyleValue, VNode } from "vue";
 import type { MarkOptional } from "@/utils/UseType";
 import type { Path, Position } from "@/components/MyGraphFlow";
@@ -47,10 +48,10 @@ export class Endpoint {
     this.options = reactive(options as EndpointOptions);
   }
 
-  bindPathMoveEvent(path: Path, type: EndpointType) {
+  bindPathEndpointPosition(path: Path, type: EndpointType) {
     const unTraceCallback = this.eventHandler.set(
       "move",
-      (position) => path.moveEndpoint(position, type),
+      (position) => path.movePosition(position, type),
       path
     );
     path.eventHandler.set("unTraceMove", unTraceCallback, this);

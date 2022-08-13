@@ -1,4 +1,4 @@
-import { KeyOfMap, ValueOfMap, ValueOf, AnyFunction } from "@/utils/UseType";
+import { KeyOfMap, AnyFunction } from "@/utils/UseType";
 
 export type EventOptions<F extends AnyFunction = AnyFunction> = {
   callback: F;
@@ -14,7 +14,7 @@ class Event<O extends EventOptions> {
     this.options = options;
   }
 
-  execute(...arg: Parameters<typeof this.callback>) {
+  execute(...arg: Parameters<O["callback"]>) {
     this.callback(...arg);
   }
 }
@@ -22,27 +22,25 @@ class Event<O extends EventOptions> {
 type OptionsItem = { key: unknown; options: EventOptions };
 type Options = Record<string, OptionsItem>;
 
-type EventMaps<O extends Options> = O extends Record<infer K, OptionsItem>
-  ? Record<K, Map<O[K]["key"], Event<O[K]["options"]>>>
-  : never;
+type EventMaps<O extends Options> = {
+  [K in keyof O]: Map<O[K]["key"], Event<O[K]["options"]>>;
+};
 
 export class EventHandler<O extends Options> {
   events: EventMaps<O>;
 
-  constructor(eventTypes: (keyof EventMaps<O>)[]) {
+  constructor(eventTypes: Array<keyof O>) {
     const events = {} as EventMaps<O>;
     for (const type of eventTypes) {
-      events[type] = new Map() as ValueOf<EventMaps<O>>;
+      events[type] = new Map();
     }
     this.events = events;
   }
 
-  set(
-    type: keyof EventMaps<O>,
-    optionsOrCallback:
-      | ValueOfMap<EventMaps<O>[typeof type]>["options"]
-      | ValueOfMap<EventMaps<O>[typeof type]>["options"]["callback"],
-    key: KeyOfMap<EventMaps<O>[typeof type]>
+  set<T extends keyof O>(
+    type: T,
+    optionsOrCallback: O[T]["options"] | O[T]["options"]["callback"],
+    key: KeyOfMap<EventMaps<O>[T]>
   ) {
     if (isFunction(optionsOrCallback))
       optionsOrCallback = { callback: optionsOrCallback };
@@ -51,25 +49,25 @@ export class EventHandler<O extends Options> {
     return () => this.delete(type, key);
   }
 
-  get(type: keyof EventMaps<O>, key: KeyOfMap<EventMaps<O>[typeof type]>) {
+  get<T extends keyof O>(type: T, key: KeyOfMap<EventMaps<O>[T]>) {
     return this.events[type]!.get(key);
   }
 
-  delete(type: keyof EventMaps<O>, key: KeyOfMap<EventMaps<O>[typeof type]>) {
+  delete<T extends keyof O>(type: T, key: KeyOfMap<EventMaps<O>[T]>) {
     return this.events[type]!.delete(key);
   }
 
-  execute(
-    type: keyof EventMaps<O>,
-    key: KeyOfMap<EventMaps<O>[typeof type]>,
-    ...arg: Parameters<ValueOfMap<EventMaps<O>[typeof type]>["callback"]>
+  execute<T extends keyof O>(
+    type: T,
+    key: KeyOfMap<EventMaps<O>[T]>,
+    ...arg: Parameters<O[T]["options"]["callback"]>
   ) {
     this.get(type, key)?.execute(...arg);
   }
 
-  trigger(
-    type: keyof EventMaps<O>,
-    ...arg: Parameters<ValueOfMap<EventMaps<O>[typeof type]>["callback"]>
+  trigger<T extends keyof O>(
+    type: T,
+    ...arg: Parameters<O[T]["options"]["callback"]>
   ) {
     for (const event of this.events[type]!.values()) event.execute(...arg);
   }
