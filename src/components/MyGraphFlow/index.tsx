@@ -1,12 +1,12 @@
 export {
-  getPathOffset,
+  getEndpointOffset,
   linePathDraw,
   bezierPathDraw,
 } from "./Edge/utils/pathDraw";
+export { type NodeRect, type NodeOptions, Node } from "./Node";
 export {
   type PathPosition,
   type PathOptions,
-  type PartialPathOptions,
   PathType,
   PathPositionType,
   Path,
@@ -14,118 +14,100 @@ export {
 export {
   type EndpointType,
   type EndpointOptions,
-  type PartialEndpointOptions,
   Endpoint,
 } from "./Edge/Endpoint";
-export {
-  type EdgeEndpointsOptions,
-  type EdgeOptions,
-  type PartialEdgeOptions,
-  Edge,
-} from "./Edge";
-export { type NodeOptions, type PartialNodeOptions, Node } from "./Node";
+export { type EdgeEndpointsOptions, type EdgeOptions, Edge } from "./Edge";
 
-/*  common  */
+/**  ##Script */
+import type { MarkOptional, ArrayOrSingle } from "@/utils/UseType";
+import {
+  type PathOptions,
+  type EdgeOptions,
+  type EdgeEndpointsOptions,
+  type NodeOptions,
+  Edge,
+  Node,
+} from "@/components/MyGraphFlow";
+
 export type Position = {
   x: number;
   y: number;
 };
 
-/*  script  */
-import type { MarkOptional } from "@/utils/UseType";
-import {
-  type PartialPathOptions,
-  type PartialEdgeOptions,
-  type EdgeEndpointsOptions,
-  type PartialNodeOptions,
-  Edge,
-  Node,
-} from "@/components/MyGraphFlow";
-
 export type GraphFlowType = "digraph" | "undigraph" | "tree";
 
 type RelationEdgeOptions = {
   id?: string;
-  path?: MarkOptional<PartialPathOptions, "positions">;
+  path?: MarkOptional<PathOptions, "positions">;
   endpoints?: EdgeEndpointsOptions;
 };
 
-export type RelationOptions = {
+type RelationOptions<NodeId extends string = string> = {
   id?: string;
-  source: PartialNodeOptions | string;
-  target: PartialNodeOptions | string;
+  source: NodeId;
+  target: NodeId;
   edge?: RelationEdgeOptions;
   weight?: number;
 };
 
-export class Relation {
+class Relation {
   id: string;
   source: Node;
   target: Node;
   edge: Edge;
   weight?: number;
 
-  constructor(options: RelationOptions) {
+  constructor(options: RelationOptions, nodes: NodeMap) {
     defaultNanoid(options);
 
-    const { useNodes, createEdges } = useGraphFlowStore();
-
     const { id, source, target, edge: edgeOptions = {}, weight } = options;
-    const sourceNode = useNodes(source);
-    const targetNode = useNodes(target);
+    const sourceNode = this._getNode(source, nodes);
+    const targetNode = this._getNode(target, nodes);
 
     const positions = {
       source: sourceNode.position,
       target: targetNode.position,
+      sourceRect: sourceNode.domRect,
+      targetRect: targetNode.domRect,
     };
     edgeOptions.path = {
-      id: `${sourceNode.id},${targetNode.id}`,
+      id: `[${sourceNode.id},${targetNode.id}]`,
       positions,
       ...edgeOptions.path,
     };
 
-    const edge = createEdges(edgeOptions as PartialEdgeOptions);
+    const edge = new Edge(edgeOptions as EdgeOptions);
 
     this.id = id!;
     this.source = sourceNode;
     this.target = targetNode;
     this.edge = edge;
     this.weight = weight;
-
-    this._bindMoveEvent();
   }
 
-  protected _bindMoveEvent() {
-    const { path } = this.edge;
-    this.source.bindPathEndpointPosition(path, "source");
-    this.target.bindPathEndpointPosition(path, "target");
-
-    this.source.bindPathOffset(path, "source");
-    this.target.bindPathOffset(path, "target");
+  protected _getNode(nodeId: string, nodes: NodeMap) {
+    const node = nodes.get(nodeId);
+    if (node === undefined) throw new Error(`Node.id: "${nodeId}" undefined`);
+    return node;
   }
 }
 
+type NodeMap = Map<string, Node>;
+type RelationMap = Map<string, Relation>;
+
 export type GraphFlowOptions = {
   type?: GraphFlowType;
-  nodes?: PartialNodeOptions[];
+  nodes: NodeOptions[];
   relations: RelationOptions[];
 };
 
 export class GraphFlow {
   type: GraphFlowType;
-  nodes: Map<string, Node>;
-  edges: Map<string, Edge>;
-  relations: Map<string, Relation>;
+  nodes: NodeMap = reactive(new Map());
+  relations: RelationMap = reactive(new Map());
 
   constructor(options: GraphFlowOptions) {
-    const {
-      nodes,
-      edges,
-      relations,
-      createRelations,
-      useNodes,
-      preset: { graphFlowType },
-    } = useGraphFlowStore();
+    const { graphFlowType } = useGraphFlowStore().preset;
 
     const {
       type = graphFlowType,
@@ -133,25 +115,63 @@ export class GraphFlow {
       relations: relationsOptions,
     } = options;
 
-    if (nodes !== undefined) useNodes(nodesOptions!);
+    this.createNodes(nodesOptions);
 
-    createRelations(relationsOptions);
+    this.createRelations(relationsOptions);
 
     this.type = type;
-    this.nodes = nodes;
-    this.edges = edges;
-    this.relations = relations;
+  }
+
+  protected _createNode(options: NodeOptions) {
+    const node = new Node(options);
+    this.nodes.set(node.id, node);
+    return node;
+  }
+
+  createNodes(options: NodeOptions): Node;
+  createNodes(options: NodeOptions[]): Node[];
+  createNodes(options: ArrayOrSingle<NodeOptions>) {
+    return isArray(options)
+      ? options.map((optionsItems) => this._createNode(optionsItems))
+      : this._createNode(options);
+  }
+
+  protected _createRelation(options: RelationOptions) {
+    const relation = new Relation(options, this.nodes);
+    this.relations.set(relation.id, relation);
+    return relation;
+  }
+
+  createRelations(options: RelationOptions): Relation;
+  createRelations(options: RelationOptions[]): Relation[];
+  createRelations(options: ArrayOrSingle<RelationOptions>) {
+    return isArray(options)
+      ? options.map((optionsItem) => this._createRelation(optionsItem))
+      : this._createRelation(options);
   }
 }
 
-/*  component  */
+/** ##Component */
 
+import type { InjectionKey } from "vue";
 import { default as MyGraphFlowNode } from "@/components/MyGraphFlow/Node";
 import { default as MyGraphFlowEdge } from "@/components/MyGraphFlow/Edge";
 
+export const graphFlowKey: InjectionKey<GraphFlow> = Symbol("GraphFlow");
+
 export default defineComponent({
-  setup() {
-    const { nodes } = useGraphFlowStore();
+  props: {
+    graphFlow: {
+      type: GraphFlow,
+      required: true,
+    },
+  },
+  setup({ graphFlow }) {
+    provide(graphFlowKey, graphFlow);
+
+    const slots = useSlots();
+
+    const { nodes } = graphFlow;
 
     const nodeElements = computed(() => {
       const elements: JSX.Element[] = [];
@@ -165,6 +185,7 @@ export default defineComponent({
       <div class="relative">
         <div>{nodeElements.value}</div>
         <MyGraphFlowEdge />
+        {slots["default"]?.()}
       </div>
     );
   },

@@ -1,9 +1,9 @@
-import type { MarkOptional } from "@/utils/UseType";
 import {
-  Endpoint,
-  type PartialEndpointOptions,
+  type EndpointOptions,
   type EndpointType,
-  type PartialPathOptions,
+  type PathOptions,
+  graphFlowKey,
+  Endpoint,
   Path,
 } from "@/components/MyGraphFlow";
 
@@ -13,23 +13,21 @@ import { default as MyGraphFlowEdgeEndpoint } from "@/components/MyGraphFlow/Edg
 import { default as MyGraphFlowEdgePath } from "@/components/MyGraphFlow/Edge/Path";
 
 export type EdgeEndpointsOptions = Partial<
-  Record<EndpointType, MarkOptional<PartialEndpointOptions, "position">>
+  Record<EndpointType, Partial<EndpointOptions>>
 >;
 
 export type EdgeOptions = {
-  id: string;
-  path: PartialPathOptions;
+  id?: string;
+  path: PathOptions;
   endpoints?: EdgeEndpointsOptions;
 };
-
-export type PartialEdgeOptions = MarkOptional<EdgeOptions, "id">;
 
 export class Edge {
   id: string;
   path: Path;
   endpoints: Partial<Record<EndpointType, Endpoint>> = {};
 
-  constructor(options: PartialEdgeOptions) {
+  constructor(options: EdgeOptions) {
     defaultNanoid(options);
     const { id, path: pathOptions, endpoints: endpointsOptions } = options;
 
@@ -37,36 +35,38 @@ export class Edge {
     this.path = new Path(pathOptions);
 
     if (endpointsOptions !== undefined) {
-      for (const [type, endpointOptions] of Object.entries(endpointsOptions)) {
-        const position = this.path.getPosition(type as EndpointType);
-
-        this.endpoints[type as EndpointType] = new Endpoint({
-          position,
-          ...endpointOptions,
-        });
-
-        this._bindMoveEvent(type as EndpointType);
-      }
+      for (const [type, endpointOptions] of Object.entries(endpointsOptions))
+        this._createEndpoint(endpointOptions, type as EndpointType);
     }
   }
 
-  protected _bindMoveEvent(type: EndpointType) {
-    if (this.endpoints[type] === undefined)
-      throw new Error(`endpoint: "${type}" undefined`);
+  protected _createEndpoint(
+    options: Partial<EndpointOptions>,
+    type: EndpointType
+  ) {
+    const { positions } = this.path;
+    defaults(options, {
+      type,
+      positionType: positions.type,
+      position: this.path.getPosition(type),
+      nodeRect: positions[`${type}Rect`],
+    });
 
-    this.endpoints[type]!.bindPathEndpointPosition(this.path, type);
+    this.endpoints[type] = new Endpoint(options as EndpointOptions);
   }
 }
 
 export default defineComponent({
   setup: function () {
-    const { edges } = useGraphFlowStore();
+    const { relations } = inject(graphFlowKey)!;
 
     const element = computed(() => {
       const pathElements: JSX.Element[] = [],
         endpointElements: JSX.Element[][] = [];
 
-      for (const { path, endpoints } of edges.values()) {
+      for (const {
+        edge: { path, endpoints },
+      } of relations.values()) {
         pathElements.push(<MyGraphFlowEdgePath path={path} />);
 
         const endpointElement = Object.values(endpoints).map((endpoint) => {
@@ -81,7 +81,7 @@ export default defineComponent({
     return () => (
       <>
         {/* * render svg container once, path should register here */}
-        <MyGraphFlowContainerSVG class="h-full w-full">
+        <MyGraphFlowContainerSVG class="absolute h-full w-full">
           {element.value.pathElements}
         </MyGraphFlowContainerSVG>
 

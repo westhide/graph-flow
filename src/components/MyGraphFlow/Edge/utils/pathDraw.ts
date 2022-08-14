@@ -1,17 +1,16 @@
 import {
-  type Position,
   type PathPosition,
   type EndpointType,
   PathPositionType,
 } from "@/components/MyGraphFlow";
 
 /** calculate path offset with different PathPositionType */
-export function getPathOffset(
+export function getEndpointOffset(
   rect: DOMRect,
   positionType: PathPositionType,
   endpointType: EndpointType
 ) {
-  const { width, height } = rect;
+  const { width = 0, height = 0 } = rect;
   let x = 0,
     y = 0;
   switch (positionType) {
@@ -37,19 +36,6 @@ export function getPathOffset(
       throw new Error(`PathPositionType: "${positionType}" undefined`);
   }
   return { x, y };
-}
-
-/** merge source&target point offset */
-function _mergeOffset(raw: Position, offset: Position) {
-  return { x: raw.x + offset.x, y: raw.y + offset.y };
-}
-function mergeOffset(positions: PathPosition) {
-  const { source, sourceOffset, target, targetOffset } = positions;
-  return {
-    ...positions,
-    source: _mergeOffset(source, sourceOffset),
-    target: _mergeOffset(target, targetOffset),
-  };
 }
 
 /** calculate PathType.Bezier control point offset */
@@ -98,15 +84,14 @@ function getControlPoint({
 
 /** ## PathType.Line path draw */
 export function linePathDraw(positions: PathPosition) {
-  const { source, target } = mergeOffset(positions);
+  const { source, target } = positions;
   return `M${source.x},${source.y} ${target.x},${target.y}`;
 }
 
 /** ## PathType.Bezier path draw */
 export function bezierPathDraw(position: PathPosition) {
-  position = mergeOffset(position);
-
   const controlPoint = getControlPoint(position);
+
   const { source, target, sourceControl, targetControl } = {
     ...controlPoint,
     ...position,

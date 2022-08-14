@@ -1,42 +1,49 @@
 import type { Ref, StyleValue, VNode } from "vue";
-import type { MarkOptional } from "@/utils/UseType";
-import {
-  type Path,
-  type EndpointType,
-  type Position,
-  getPathOffset,
-} from "@/components/MyGraphFlow";
+import type { Writable } from "@/utils/UseType";
 import { type EventOptions, EventHandler } from "@/utils/UseEvent";
+import { type Position } from "@/components/MyGraphFlow";
+
+export type NodeRect = Writable<DOMRect>;
 
 export type NodeOptions = {
-  id: string;
+  id?: string;
   position: Position;
+  offset?: Position;
   draggable?: boolean;
   label?: string | VNode;
   slot?: VNode;
 };
 
-export type PartialNodeOptions = MarkOptional<NodeOptions, "id">;
-
 type EventMapKey = object | string;
 type MoveCallback = (position: Position, event: PointerEvent) => void;
-type ResizeCallback = (rect: DOMRect) => void;
 
 type EventHandlerOptions = {
   move: { key: EventMapKey; options: EventOptions<MoveCallback> };
-  resize: { key: EventMapKey; options: EventOptions<ResizeCallback> };
 };
 
 export class Node {
   id: string;
-  el?: Ref<HTMLElement | undefined> | HTMLElement;
-  options: NodeOptions;
-  eventHandler: EventHandler<EventHandlerOptions>;
+  position: Position;
+  draggable: boolean;
+  label: string | VNode;
+  slot?: VNode;
 
+  el?: Ref<HTMLElement | null> | HTMLElement;
+  domRect = reactive({}) as NodeRect;
+  eventHandler = new EventHandler<EventHandlerOptions>(["move"]);
   resizeObserver?: ResizeObserver;
 
-  get position() {
-    return this.options.position;
+  constructor(options: NodeOptions) {
+    const { node: nodePreset } = useGraphFlowStore().preset;
+    defaultsDeep(options, cloneDeep(nodePreset));
+    defaultNanoid(options);
+
+    const { id, position, draggable, label, slot } = reactive(options);
+    this.id = id!;
+    this.position = position;
+    this.draggable = draggable!;
+    this.label = label!;
+    this.slot = slot;
   }
 
   get anchor(): StyleValue {
@@ -44,53 +51,31 @@ export class Node {
     return `left: ${x}px; top: ${y}px`;
   }
 
-  constructor(options: PartialNodeOptions) {
-    this.eventHandler = new EventHandler(["move", "resize"]);
-
-    const { node: nodePreset } = useGraphFlowStore().preset;
-    defaultsDeep(options, nodePreset);
-    defaultNanoid(options);
-
-    this.id = options.id!;
-    this.options = reactive(options as NodeOptions);
-  }
-
-  bindPathEndpointPosition(path: Path, type: EndpointType) {
-    const unTraceCallback = this.eventHandler.set(
-      "move",
-      (position) => path.movePosition(position, type),
-      path
-    );
-    path.eventHandler.set("unTraceMove", unTraceCallback, this);
-  }
-
-  bindPathOffset(path: Path, type: EndpointType) {
-    const unTraceCallback = this.eventHandler.set(
-      "resize",
-      (rect) => {
-        const {
-          positions,
-          positions: { type: positionType },
-        } = path.options;
-
-        positions[`${type}Offset`] = getPathOffset(rect, positionType, type);
-      },
-      path
-    );
-    path.eventHandler.set("unTraceResize", unTraceCallback, this);
-  }
-
   protected _observerResize() {
     this.resizeObserver = new ResizeObserver(([entry]) => {
-      if (entry) this.eventHandler.trigger("resize", entry.contentRect);
+      if (entry) {
+        const { x, y, width, height, left, right, bottom, top } =
+          entry.contentRect;
+        Object.assign(this.domRect, {
+          x,
+          y,
+          width,
+          height,
+          left,
+          right,
+          bottom,
+          top,
+        });
+      }
     });
     this.resizeObserver.observe(this.el as HTMLElement);
   }
 
   // TODO: fix useDraggable must el Ref<HTMLElement>
-  protected _observerDrag(el: Ref<HTMLElement | undefined>) {
-    const onMove: MoveCallback = (...arg) =>
+  protected _observerDrag(el: Ref<HTMLElement | null>) {
+    const onMove: MoveCallback = (...arg) => {
       this.eventHandler.trigger("move", ...arg);
+    };
 
     useDraggable(el, {
       initialValue: this.position,
@@ -99,14 +84,20 @@ export class Node {
 
     this.eventHandler.set(
       "move",
-      (position) => (this.options.position = position),
+      (position) => {
+        this.movePosition(position);
+      },
       "default"
     );
   }
 
-  mount(el: Ref<HTMLElement | undefined>) {
+  movePosition(position: Partial<Position>) {
+    Object.assign(this.position, position);
+  }
+
+  mount(el: Ref<HTMLElement | null>) {
     this.el = el;
-    if (this.options.draggable) this._observerDrag(el);
+    if (this.draggable) this._observerDrag(el);
 
     onMounted(() => this._observerResize());
   }
@@ -120,7 +111,7 @@ export default defineComponent({
     },
   },
   setup({ node }) {
-    const el = ref<HTMLElement>();
+    const el = ref<HTMLElement | null>(null);
 
     node.mount(el);
 
@@ -128,8 +119,8 @@ export default defineComponent({
 
     const NodeElement = computed(() => (
       <div class="px-1 border border-slate-300 rounded-[2px] bg-gray-100 select-none">
-        <span>{node.options.label ?? label}</span>
-        <span class="text-xs">{`<${node.options.id}>`}</span>
+        <span>{node.label ?? label}</span>
+        <span class="text-xs">{`<${node.id}>`}</span>
       </div>
     ));
 
@@ -140,7 +131,7 @@ export default defineComponent({
         data-node-id={node.id}
         class="absolute cursor-grab shadow z-[1]"
       >
-        {node.options.slot ?? NodeElement.value}
+        {node.slot ?? NodeElement.value}
       </div>
     );
   },

@@ -1,7 +1,12 @@
 import type { SVGAttributes, WatchStopHandle } from "vue";
-import type { Merge, MarkOptional, PickKeysByValue } from "@/utils/UseType";
-import type { EndpointType, Position } from "@/components/MyGraphFlow";
 import { type EventOptions, EventHandler } from "@/utils/UseEvent";
+import type { MarkOptional } from "@/utils/UseType";
+import {
+  type NodeRect,
+  type EndpointType,
+  type Position,
+  getEndpointOffset,
+} from "@/components/MyGraphFlow";
 
 export const enum PathType {
   Line = "line",
@@ -22,60 +27,46 @@ export type PathPosition = {
   target: Position;
   sourceControl?: Position;
   targetControl?: Position;
-  sourceOffset: Position;
-  targetOffset: Position;
+  sourceRect: NodeRect;
+  targetRect: NodeRect;
   curvature: number;
 };
-type PathPositionMoveType = Exclude<
-  PickKeysByValue<PathPosition, Position>,
-  undefined
+
+type PartialPathPosition = MarkOptional<
+  PathPosition,
+  "type" | "sourceRect" | "targetRect" | "curvature"
 >;
 
 export type PathOptions = {
+  id?: string;
+  type?: PathType;
+  positions: PartialPathPosition;
+  attributes?: SVGAttributes;
+  pathDraw?: (position: PathPosition) => string;
+};
+
+type EventMapKey = object | string;
+type MoveCallback = (position: Position, type: EndpointType) => void;
+
+type EventHandlerOptions = {
+  move: { key: EventMapKey; options: EventOptions<MoveCallback> };
+};
+
+export class Path {
   id: string;
   type: PathType;
   positions: PathPosition;
   attributes: SVGAttributes;
   pathDraw: (position: PathPosition) => string;
-};
 
-type PartialPathPosition = {
-  positions: MarkOptional<
-    PathPosition,
-    "type" | "sourceOffset" | "targetOffset" | "curvature"
-  >;
-};
-export type PartialPathOptions = Merge<
-  Partial<PathOptions>,
-  PartialPathPosition
->;
-
-type EventMapKey = object | string;
-type MoveCallback = (position: Position, type: EndpointType) => void;
-type unTraceEventOptions = EventOptions<() => void>;
-
-type EventHandlerOptions = {
-  move: { key: EventMapKey; options: EventOptions<MoveCallback> };
-  unTraceMove: { key: EventMapKey; options: unTraceEventOptions };
-  unTraceResize: { key: EventMapKey; options: unTraceEventOptions };
-};
-
-export class Path {
-  id: string;
-  options: PathOptions;
-  eventHandler: EventHandler<EventHandlerOptions>;
+  eventHandler = new EventHandler<EventHandlerOptions>(["move"]);
 
   stopWatchDrawPath?: WatchStopHandle;
 
-  constructor(options: PartialPathOptions) {
-    this.eventHandler = new EventHandler([
-      "move",
-      "unTraceMove",
-      "unTraceResize",
-    ]);
-
+  constructor(options: PathOptions) {
     const { path: pathPreset } = useGraphFlowStore().preset;
     const { type = pathPreset.type } = options;
+
     defaultsDeep(
       options,
       pathPreset.map[type],
@@ -84,38 +75,51 @@ export class Path {
     );
     defaultNanoid(options);
 
-    this.id = options.id!;
-    this.options = reactive(options as PathOptions);
+    const { id, positions, attributes, pathDraw } = reactive(options);
+    this.id = id!;
+    this.type = type;
+    this.positions = positions as PathPosition;
+    this.attributes = attributes!;
+    this.pathDraw = pathDraw!;
 
+    this._watchPathDraw();
+  }
+
+  protected _watchPathDraw() {
     const {
-      positions,
       attributes,
       attributes: { d },
       pathDraw,
-    } = this.options;
+    } = this;
 
     if (d === undefined) {
       this.stopWatchDrawPath = watchEffect(() => {
-        attributes.d = pathDraw(positions);
+        attributes!.d = pathDraw(this.offsetPositions);
       });
     }
   }
 
-  get attributes() {
-    return this.options.attributes;
+  movePosition(position: Partial<Position>, type: EndpointType) {
+    Object.assign(this.positions[type], position);
   }
 
-  get positions() {
-    return this.options.positions;
-  }
-
-  movePosition(position: Partial<Position>, type: PathPositionMoveType) {
-    const currentPosition = this.positions[type];
-    this.options.positions[type] = { ...currentPosition, ...position };
-  }
-
-  getPosition(type: PathPositionMoveType) {
+  getPosition(type: EndpointType) {
     return this.positions[type];
+  }
+
+  protected _mergeOffset({ x, y }: Position, offset: Position) {
+    return { x: x + offset.x, y: y + offset.y };
+  }
+
+  get offsetPositions() {
+    const { type, source, sourceRect, target, targetRect } = this.positions;
+    const sourceOffset = getEndpointOffset(sourceRect, type, "source");
+    const targetOffset = getEndpointOffset(targetRect, type, "target");
+    return {
+      ...this.positions,
+      source: this._mergeOffset(source, sourceOffset),
+      target: this._mergeOffset(target, targetOffset),
+    };
   }
 }
 

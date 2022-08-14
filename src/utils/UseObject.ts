@@ -1,4 +1,4 @@
-export { cloneDeep } from "lodash-es";
+export { defaults, cloneDeep } from "lodash-es";
 
 import type { DeepPartial } from "@/utils/UseType";
 import { defaultsDeep as _defaultsDeep } from "lodash-es";

@@ -577,6 +577,7 @@ export type PickPropertiesDeep<T, V> = NonNever<{
 
 export type AnyFunction = (...arg: any[]) => any;
 
+export type KeyOfMap<M> = M extends Map<infer K, any> ? K : never;
 export type ValueOfMap<M> = M extends Map<any, infer V> ? V : never;
 
-export type KeyOfMap<M> = M extends Map<infer K, any> ? K : never;
+export type ValueOfArray<A> = A extends Array<infer V> ? V : never;

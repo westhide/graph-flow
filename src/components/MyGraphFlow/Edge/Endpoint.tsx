@@ -1,80 +1,69 @@
-// TODO: class Endpoint extends Node
-import type { Ref, StyleValue, VNode } from "vue";
-import type { MarkOptional } from "@/utils/UseType";
-import type { Path, Position } from "@/components/MyGraphFlow";
+import type { Ref, StyleValue } from "vue";
 import { type EventOptions, EventHandler } from "@/utils/UseEvent";
+import {
+  type NodeRect,
+  type Position,
+  type PathPositionType,
+  type NodeOptions,
+  getEndpointOffset,
+  Node,
+} from "@/components/MyGraphFlow";
 
 export type EndpointType = "source" | "target";
 
-export type EndpointOptions = {
-  id: string;
-  position: Position;
-  draggable?: boolean;
-  slot?: VNode;
+export type EndpointOptions = NodeOptions & {
+  type: EndpointType;
+  positionType?: PathPositionType;
+  nodeRect?: NodeRect;
 };
 
-export type PartialEndpointOptions = MarkOptional<EndpointOptions, "id">;
-
-type MoveEventMapKey = object | string;
+type EventMapKey = object | string;
 type MoveCallback = (position: Position, event: PointerEvent) => void;
 
 type EventHandlerOptions = {
-  move: { key: MoveEventMapKey; options: EventOptions<MoveCallback> };
+  move: { key: EventMapKey; options: EventOptions<MoveCallback> };
 };
 
-export class Endpoint {
-  id: string;
-  el?: Ref<HTMLElement | undefined> | HTMLElement;
-  options: EndpointOptions;
-  eventHandler: EventHandler<EventHandlerOptions>;
+export class Endpoint extends Node {
+  type: EndpointType;
+  positionType: PathPositionType;
+  nodeRect: NodeRect;
 
-  get position() {
-    return this.options.position;
-  }
+  override eventHandler = new EventHandler<EventHandlerOptions>(["move"]);
 
-  get anchor(): StyleValue {
-    const { x, y } = this.position;
-    return `left: ${x}px; top: ${y}px`;
-  }
-
-  constructor(options: PartialEndpointOptions) {
-    this.eventHandler = new EventHandler(["move"]);
-
-    const { endpoint: endpointPreset } = useGraphFlowStore().preset;
+  constructor(options: EndpointOptions) {
+    const {
+      endpoint: endpointPreset,
+      path: {
+        positions: { type: pathPositionType },
+      },
+    } = useGraphFlowStore().preset;
     defaultsDeep(options, endpointPreset);
     defaultNanoid(options);
 
-    this.id = options.id!;
-    this.options = reactive(options as EndpointOptions);
+    super(options);
+
+    const { type, positionType = pathPositionType, nodeRect } = options;
+    this.nodeRect = nodeRect!;
+    this.type = type;
+    this.positionType = positionType;
   }
 
-  bindPathEndpointPosition(path: Path, type: EndpointType) {
-    const unTraceCallback = this.eventHandler.set(
-      "move",
-      (position) => path.movePosition(position, type),
-      path
-    );
-    path.eventHandler.set("unTraceMove", unTraceCallback, this);
+  override get anchor(): StyleValue {
+    const { x, y } = this._mergeOffset(this.position, this.offset);
+    return `left: ${x}px; top: ${y}px`;
   }
 
-  mount(el: Ref<HTMLElement | undefined>) {
+  protected _mergeOffset({ x, y }: Position, offset: Position) {
+    return { x: x + offset.x, y: y + offset.y };
+  }
+
+  get offset() {
+    return getEndpointOffset(this.nodeRect, this.positionType, this.type);
+  }
+
+  override mount(el: Ref<HTMLElement | null>) {
     this.el = el;
-
-    if (!this.options.draggable) return;
-
-    const onMove: MoveCallback = (...arg) =>
-      this.eventHandler.trigger("move", ...arg);
-
-    useDraggable(el, {
-      initialValue: this.position,
-      onMove: onMove.bind(this),
-    });
-
-    this.eventHandler.set(
-      "move",
-      (position) => (this.options.position = position),
-      "default"
-    );
   }
 }
 
@@ -86,7 +75,7 @@ export default defineComponent({
     },
   },
   setup({ endpoint }) {
-    const el = ref<HTMLElement>();
+    const el = ref<HTMLElement | null>(null);
 
     endpoint.mount(el);
 
@@ -101,7 +90,7 @@ export default defineComponent({
         data-endpoint-id={endpoint.id}
         class="absolute cursor-pointer z-[2]"
       >
-        {endpoint.options.slot ?? EndpointSpot}
+        {endpoint.slot ?? EndpointSpot}
       </div>
     );
   },
