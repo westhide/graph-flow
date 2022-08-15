@@ -1,5 +1,5 @@
 import type { Ref, StyleValue } from "vue";
-import { type EventOptions, EventHandler } from "@/utils/UseEvent";
+import { type EventOptions, EventHandler } from "@/utils/UseEventHandler";
 import {
   type NodeRect,
   type Position,

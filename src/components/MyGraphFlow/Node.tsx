@@ -1,7 +1,7 @@
 import type { Ref, StyleValue, VNode } from "vue";
 import type { Writable } from "@/utils/UseType";
-import { type EventOptions, EventHandler } from "@/utils/UseEvent";
-import { type Position } from "@/components/MyGraphFlow";
+import { type EventOptions, EventHandler } from "@/utils/UseEventHandler";
+import { type Position, containerKey } from "@/components/MyGraphFlow";
 
 export type NodeRect = Writable<DOMRect>;
 
@@ -54,18 +54,8 @@ export class Node {
   protected _observerResize() {
     this.resizeObserver = new ResizeObserver(([entry]) => {
       if (entry) {
-        const { x, y, width, height, left, right, bottom, top } =
-          entry.contentRect;
-        Object.assign(this.domRect, {
-          x,
-          y,
-          width,
-          height,
-          left,
-          right,
-          bottom,
-          top,
-        });
+        const rect = resolveRect(entry.contentRect);
+        Object.assign(this.domRect, rect);
       }
     });
     this.resizeObserver.observe(this.el as HTMLElement);
@@ -73,22 +63,16 @@ export class Node {
 
   // TODO: fix useDraggable must el Ref<HTMLElement>
   protected _observerDrag(el: Ref<HTMLElement | null>) {
-    const onMove: MoveCallback = (...arg) => {
-      this.eventHandler.trigger("move", ...arg);
-    };
+    const container = inject(containerKey);
 
-    useDraggable(el, {
-      initialValue: this.position,
-      onMove: onMove.bind(this),
+    const { position } = domDraggable(el, {
+      initPosition: this.position,
+      container,
     });
 
-    this.eventHandler.set(
-      "move",
-      (position) => {
-        this.movePosition(position);
-      },
-      "default"
-    );
+    watchEffect(() => {
+      Object.assign(this.position, position.value);
+    });
   }
 
   movePosition(position: Partial<Position>) {
@@ -97,9 +81,11 @@ export class Node {
 
   mount(el: Ref<HTMLElement | null>) {
     this.el = el;
-    if (this.draggable) this._observerDrag(el);
 
-    onMounted(() => this._observerResize());
+    onMounted(() => {
+      if (this.draggable) this._observerDrag(el);
+      this._observerResize();
+    });
   }
 }
 

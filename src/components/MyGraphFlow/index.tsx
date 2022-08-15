@@ -153,11 +153,12 @@ export class GraphFlow {
 
 /** ##Component */
 
-import type { InjectionKey } from "vue";
+import type { Ref, InjectionKey } from "vue";
 import { default as MyGraphFlowNode } from "@/components/MyGraphFlow/Node";
 import { default as MyGraphFlowEdge } from "@/components/MyGraphFlow/Edge";
 
 export const graphFlowKey: InjectionKey<GraphFlow> = Symbol("GraphFlow");
+export const containerKey: InjectionKey<Ref<HTMLElement>> = Symbol("WrapBox");
 
 export default defineComponent({
   props: {
@@ -167,7 +168,10 @@ export default defineComponent({
     },
   },
   setup({ graphFlow }) {
+    const container = ref<HTMLElement | null>(null);
+
     provide(graphFlowKey, graphFlow);
+    provide(containerKey, container);
 
     const slots = useSlots();
 
@@ -182,7 +186,7 @@ export default defineComponent({
     });
 
     return () => (
-      <div class="relative">
+      <div ref={container} class="relative">
         <div>{nodeElements.value}</div>
         <MyGraphFlowEdge />
         {slots["default"]?.()}

@@ -1,5 +1,5 @@
 import type { SVGAttributes, WatchStopHandle } from "vue";
-import { type EventOptions, EventHandler } from "@/utils/UseEvent";
+import { type EventOptions, EventHandler } from "@/utils/UseEventHandler";
 import type { MarkOptional } from "@/utils/UseType";
 import {
   type NodeRect,
