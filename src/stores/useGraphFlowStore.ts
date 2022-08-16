@@ -14,22 +14,22 @@ export default defineStore("graphFlow", () => {
       type: PathType.Bezier,
       positions: {
         type: PathPositionType.Right,
-        sourceRect: {},
-        targetRect: {},
-        curvature: 0.25,
+        sourceOffset: { x: 0, y: 0 },
+        targetOffset: { x: 0, y: 0 },
       },
-      map: {
+      curvature: 0.25,
+      cases: {
         [PathType.Line]: {
           attributes: {
             class: ["stroke-gray-400", "stroke-1", "fill-transparent"],
           },
-          pathDraw: linePathDraw,
+          draw: linePathDraw,
         },
         [PathType.Bezier]: {
           attributes: {
             class: ["stroke-gray-400", "stroke-1", "fill-transparent"],
           },
-          pathDraw: bezierPathDraw,
+          draw: bezierPathDraw,
         },
       },
     },

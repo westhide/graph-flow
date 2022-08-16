@@ -1,11 +1,10 @@
 import type { Ref, StyleValue } from "vue";
 import { type EventOptions, EventHandler } from "@/utils/UseEventHandler";
 import {
-  type NodeRect,
   type Position,
   type PathPositionType,
   type NodeOptions,
-  getEndpointOffset,
+  mergeOffset,
   Node,
 } from "@/components/MyGraphFlow";
 
@@ -14,7 +13,7 @@ export type EndpointType = "source" | "target";
 export type EndpointOptions = NodeOptions & {
   type: EndpointType;
   positionType?: PathPositionType;
-  nodeRect?: NodeRect;
+  offset?: Position;
 };
 
 type EventMapKey = object | string;
@@ -27,7 +26,7 @@ type EventHandlerOptions = {
 export class Endpoint extends Node {
   type: EndpointType;
   positionType: PathPositionType;
-  nodeRect: NodeRect;
+  offset: Position;
 
   override eventHandler = new EventHandler<EventHandlerOptions>(["move"]);
 
@@ -43,23 +42,15 @@ export class Endpoint extends Node {
 
     super(options);
 
-    const { type, positionType = pathPositionType, nodeRect } = options;
-    this.nodeRect = nodeRect!;
+    const { type, positionType = pathPositionType, offset } = reactive(options);
     this.type = type;
     this.positionType = positionType;
+    this.offset = offset!;
   }
 
   override get anchor(): StyleValue {
-    const { x, y } = this._mergeOffset(this.position, this.offset);
+    const { x, y } = mergeOffset(this.position, this.offset);
     return `left: ${x}px; top: ${y}px`;
-  }
-
-  protected _mergeOffset({ x, y }: Position, offset: Position) {
-    return { x: x + offset.x, y: y + offset.y };
-  }
-
-  get offset() {
-    return getEndpointOffset(this.nodeRect, this.positionType, this.type);
   }
 
   override mount(el: Ref<HTMLElement | null>) {

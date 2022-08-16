@@ -1,42 +1,8 @@
 import {
+  type Position,
   type PathPosition,
-  type EndpointType,
   PathPositionType,
 } from "@/components/MyGraphFlow";
-
-/** calculate path offset with different PathPositionType */
-export function getEndpointOffset(
-  rect: DOMRect,
-  positionType: PathPositionType,
-  endpointType: EndpointType
-) {
-  const { width = 0, height = 0 } = rect;
-  let x = 0,
-    y = 0;
-  switch (positionType) {
-    case PathPositionType.Left:
-      y = height / 2;
-      if (endpointType === "target") x = width;
-      break;
-    case PathPositionType.Right:
-      y = height / 2;
-      if (endpointType === "source") x = width;
-      break;
-    case PathPositionType.Top:
-      x = width / 2;
-      if (endpointType === "target") y = height;
-      break;
-    case PathPositionType.Bottom:
-      x = width / 2;
-      if (endpointType === "source") y = height;
-      break;
-    case PathPositionType.Float:
-      break;
-    default:
-      throw new Error(`PathPositionType: "${positionType}" undefined`);
-  }
-  return { x, y };
-}
 
 /** calculate PathType.Bezier control point offset */
 function controlOffset(distance: number, curvature: number) {
@@ -45,12 +11,14 @@ function controlOffset(distance: number, curvature: number) {
   return distance >= 0 ? offsetA : offsetB;
 }
 /** calculate PathType.Bezier control point position */
-function getControlPoint({
-  type,
-  source: { x: scX, y: scY },
-  target: { x: tcX, y: tcY },
-  curvature,
-}: PathPosition) {
+function getControlPositions(
+  {
+    type,
+    source: { x: scX, y: scY },
+    target: { x: tcX, y: tcY },
+  }: PathPosition,
+  curvature: number
+) {
   const cOx = controlOffset(scX - tcX, curvature);
   const cOy = controlOffset(scY - tcY, curvature);
 
@@ -77,8 +45,8 @@ function getControlPoint({
       throw new Error(`PathPositionType: "${type}" undefined`);
   }
   return {
-    sourceControl: { x: scX, y: scY },
-    targetControl: { x: tcX, y: tcY },
+    sourceControl: { x: scX, y: scY } as Position,
+    targetControl: { x: tcX, y: tcY } as Position,
   };
 }
 
@@ -89,12 +57,12 @@ export function linePathDraw(positions: PathPosition) {
 }
 
 /** ## PathType.Bezier path draw */
-export function bezierPathDraw(position: PathPosition) {
-  const controlPoint = getControlPoint(position);
+export function bezierPathDraw(positions: PathPosition, curvature: number) {
+  const { sourceControl, targetControl } = getControlPositions(
+    positions,
+    curvature
+  );
+  const { source, target } = positions;
 
-  const { source, target, sourceControl, targetControl } = {
-    ...controlPoint,
-    ...position,
-  };
   return `M${source.x},${source.y} C${sourceControl.x},${sourceControl.y} ${targetControl.x},${targetControl.y} ${target.x},${target.y}`;
 }

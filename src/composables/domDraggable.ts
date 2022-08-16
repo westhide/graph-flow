@@ -12,7 +12,7 @@ type Options = {
   stopPropagation?: boolean;
 };
 
-function getElementRect(el?: HTMLElement | null) {
+function getElementPosition(el?: HTMLElement | null) {
   const rect = el?.getBoundingClientRect();
   if (rect) return { x: rect.x, y: rect.y };
   else return { x: 0, y: 0 };
@@ -30,11 +30,11 @@ export function domDraggable(
   let offset = $ref<Position | undefined>();
 
   const start = (e: PointerEvent) => {
-    const rootRect = getElementRect(root);
-    const targetRect = getElementRect(target);
+    const { x: rootX, y: rootY } = getElementPosition(root);
+    const { x: targetX, y: targetY } = getElementPosition(target);
     offset = {
-      x: e.pageX - targetRect.x + rootRect.x,
-      y: e.pageY - targetRect.y + rootRect.y,
+      x: e.pageX - targetX + rootX,
+      y: e.pageY - targetY + rootY,
     };
   };
 

@@ -8,7 +8,6 @@ export type NodeRect = Writable<DOMRect>;
 export type NodeOptions = {
   id?: string;
   position: Position;
-  offset?: Position;
   draggable?: boolean;
   label?: string | VNode;
   slot?: VNode;
@@ -29,13 +28,13 @@ export class Node {
   slot?: VNode;
 
   el?: Ref<HTMLElement | null> | HTMLElement;
-  domRect = reactive({}) as NodeRect;
+  DOMRect = reactive({}) as NodeRect;
   eventHandler = new EventHandler<EventHandlerOptions>(["move"]);
   resizeObserver?: ResizeObserver;
 
   constructor(options: NodeOptions) {
     const { node: nodePreset } = useGraphFlowStore().preset;
-    defaultsDeep(options, cloneDeep(nodePreset));
+    defaultsDeep(options, nodePreset);
     defaultNanoid(options);
 
     const { id, position, draggable, label, slot } = reactive(options);
@@ -44,6 +43,10 @@ export class Node {
     this.draggable = draggable!;
     this.label = label!;
     this.slot = slot;
+  }
+
+  movePosition(position: Partial<Position>) {
+    Object.assign(this.position, position);
   }
 
   get anchor(): StyleValue {
@@ -55,7 +58,7 @@ export class Node {
     this.resizeObserver = new ResizeObserver(([entry]) => {
       if (entry) {
         const rect = resolveRect(entry.contentRect);
-        Object.assign(this.domRect, rect);
+        Object.assign(this.DOMRect, rect);
       }
     });
     this.resizeObserver.observe(this.el as HTMLElement);
@@ -73,10 +76,6 @@ export class Node {
     watchEffect(() => {
       Object.assign(this.position, position.value);
     });
-  }
-
-  movePosition(position: Partial<Position>) {
-    Object.assign(this.position, position);
   }
 
   mount(el: Ref<HTMLElement | null>) {

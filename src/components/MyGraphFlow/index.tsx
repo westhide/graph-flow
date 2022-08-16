@@ -1,8 +1,5 @@
-export {
-  getEndpointOffset,
-  linePathDraw,
-  bezierPathDraw,
-} from "./Edge/utils/pathDraw";
+export { linePathDraw, bezierPathDraw } from "./utils/pathDraw";
+export { mergeOffset, getEndpointOffset } from "./utils/position";
 export { type NodeRect, type NodeOptions, Node } from "./Node";
 export {
   type PathPosition,
@@ -19,12 +16,12 @@ export {
 export { type EdgeEndpointsOptions, type EdgeOptions, Edge } from "./Edge";
 
 /**  ##Script */
-import type { MarkOptional, ArrayOrSingle } from "@/utils/UseType";
+import type { MarkOptional, ArrayOrSingle, Merge } from "@/utils/UseType";
 import {
   type PathOptions,
   type EdgeOptions,
-  type EdgeEndpointsOptions,
   type NodeOptions,
+  getEndpointOffset,
   Edge,
   Node,
 } from "@/components/MyGraphFlow";
@@ -36,11 +33,9 @@ export type Position = {
 
 export type GraphFlowType = "digraph" | "undigraph" | "tree";
 
-type RelationEdgeOptions = {
-  id?: string;
-  path?: MarkOptional<PathOptions, "positions">;
-  endpoints?: EdgeEndpointsOptions;
-};
+type RelationEdgeOptions = Partial<
+  Merge<EdgeOptions, { path: MarkOptional<PathOptions, "positions"> }>
+>;
 
 type RelationOptions<NodeId extends string = string> = {
   id?: string;
@@ -67,8 +62,6 @@ class Relation {
     const positions = {
       source: sourceNode.position,
       target: targetNode.position,
-      sourceRect: sourceNode.domRect,
-      targetRect: targetNode.domRect,
     };
     edgeOptions.path = {
       id: `[${sourceNode.id},${targetNode.id}]`,
@@ -83,12 +76,32 @@ class Relation {
     this.target = targetNode;
     this.edge = edge;
     this.weight = weight;
+
+    this._watchResize();
   }
 
   protected _getNode(nodeId: string, nodes: NodeMap) {
     const node = nodes.get(nodeId);
     if (node === undefined) throw new Error(`Node.id: "${nodeId}" undefined`);
     return node;
+  }
+
+  protected _watchResize() {
+    watchPostEffect(() => {
+      const { positions } = this.edge.path;
+      const sourceOffset = getEndpointOffset(
+        this.source.DOMRect,
+        positions.type,
+        "source"
+      );
+      const targetOffset = getEndpointOffset(
+        this.source.DOMRect,
+        positions.type,
+        "target"
+      );
+      Object.assign(positions.sourceOffset, { ...sourceOffset });
+      Object.assign(positions.targetOffset, { ...targetOffset });
+    });
   }
 }
 

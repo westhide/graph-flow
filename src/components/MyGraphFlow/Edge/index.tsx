@@ -45,11 +45,12 @@ export class Edge {
     type: EndpointType
   ) {
     const { positions } = this.path;
+
     defaults(options, {
       type,
       positionType: positions.type,
-      position: this.path.getPosition(type),
-      nodeRect: positions[`${type}Rect`],
+      position: positions[type],
+      offset: positions[`${type}Offset`],
     });
 
     this.endpoints[type] = new Endpoint(options as EndpointOptions);

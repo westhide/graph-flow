@@ -2,10 +2,9 @@ import type { SVGAttributes, WatchStopHandle } from "vue";
 import { type EventOptions, EventHandler } from "@/utils/UseEventHandler";
 import type { MarkOptional } from "@/utils/UseType";
 import {
-  type NodeRect,
   type EndpointType,
   type Position,
-  getEndpointOffset,
+  mergeOffset,
 } from "@/components/MyGraphFlow";
 
 export const enum PathType {
@@ -25,16 +24,13 @@ export type PathPosition = {
   type: PathPositionType;
   source: Position;
   target: Position;
-  sourceControl?: Position;
-  targetControl?: Position;
-  sourceRect: NodeRect;
-  targetRect: NodeRect;
-  curvature: number;
+  sourceOffset: Position;
+  targetOffset: Position;
 };
 
 type PartialPathPosition = MarkOptional<
   PathPosition,
-  "type" | "sourceRect" | "targetRect" | "curvature"
+  "type" | "sourceOffset" | "targetOffset"
 >;
 
 export type PathOptions = {
@@ -42,7 +38,8 @@ export type PathOptions = {
   type?: PathType;
   positions: PartialPathPosition;
   attributes?: SVGAttributes;
-  pathDraw?: (position: PathPosition) => string;
+  draw?: (position: PathPosition, curvature: number) => string;
+  curvature?: number;
 };
 
 type EventMapKey = object | string;
@@ -57,7 +54,8 @@ export class Path {
   type: PathType;
   positions: PathPosition;
   attributes: SVGAttributes;
-  pathDraw: (position: PathPosition) => string;
+  draw: (position: PathPosition, curvature: number) => string;
+  curvature: number;
 
   eventHandler = new EventHandler<EventHandlerOptions>(["move"]);
 
@@ -67,20 +65,20 @@ export class Path {
     const { path: pathPreset } = useGraphFlowStore().preset;
     const { type = pathPreset.type } = options;
 
-    defaultsDeep(
-      options,
-      pathPreset.map[type],
-      { positions: cloneDeep(pathPreset.positions) },
-      { type }
-    );
+    defaultsDeep(options, pathPreset.cases[type], {
+      type,
+      positions: pathPreset.positions,
+      curvature: pathPreset.curvature,
+    });
     defaultNanoid(options);
 
-    const { id, positions, attributes, pathDraw } = reactive(options);
+    const { id, positions, attributes, draw, curvature } = reactive(options);
     this.id = id!;
     this.type = type;
     this.positions = positions as PathPosition;
     this.attributes = attributes!;
-    this.pathDraw = pathDraw!;
+    this.draw = draw!;
+    this.curvature = curvature!;
 
     this._watchPathDraw();
   }
@@ -89,12 +87,12 @@ export class Path {
     const {
       attributes,
       attributes: { d },
-      pathDraw,
+      draw,
     } = this;
 
     if (d === undefined) {
       this.stopWatchDrawPath = watchEffect(() => {
-        attributes!.d = pathDraw(this.offsetPositions);
+        attributes!.d = draw(this.offsetPositions, this.curvature);
       });
     }
   }
@@ -107,18 +105,12 @@ export class Path {
     return this.positions[type];
   }
 
-  protected _mergeOffset({ x, y }: Position, offset: Position) {
-    return { x: x + offset.x, y: y + offset.y };
-  }
-
   get offsetPositions() {
-    const { type, source, sourceRect, target, targetRect } = this.positions;
-    const sourceOffset = getEndpointOffset(sourceRect, type, "source");
-    const targetOffset = getEndpointOffset(targetRect, type, "target");
+    const { source, sourceOffset, target, targetOffset } = this.positions;
     return {
       ...this.positions,
-      source: this._mergeOffset(source, sourceOffset),
-      target: this._mergeOffset(target, targetOffset),
+      source: mergeOffset(source, sourceOffset),
+      target: mergeOffset(target, targetOffset),
     };
   }
 }
