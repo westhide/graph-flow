@@ -1,43 +1,41 @@
-import {
-  type Position,
-  type EndpointType,
-  PathPositionType,
-} from "@/components/MyGraphFlow";
+import { type Position, PositionType } from "@/components/MyGraphFlow";
 
 export function mergeOffset({ x, y }: Position, offset: Position) {
   return { x: x + offset.x, y: y + offset.y };
 }
 
 /** calculate path offset with different PathPositionType */
-export function getEndpointOffset(
-  rect: DOMRect,
-  positionType: PathPositionType,
-  endpointType: EndpointType
-) {
+export function getEndpointOffset(rect: DOMRect, positionType: PositionType) {
   const { width = 0, height = 0 } = rect;
   let x = 0,
     y = 0;
   switch (positionType) {
-    case PathPositionType.Left:
+    case PositionType.Left:
       y = height / 2;
-      if (endpointType === "target") x = width;
       break;
-    case PathPositionType.Right:
+    case PositionType.Right:
       y = height / 2;
-      if (endpointType === "source") x = width;
+      x = width;
       break;
-    case PathPositionType.Top:
+    case PositionType.Top:
       x = width / 2;
-      if (endpointType === "target") y = height;
       break;
-    case PathPositionType.Bottom:
+    case PositionType.Bottom:
       x = width / 2;
-      if (endpointType === "source") y = height;
+      y = height;
       break;
-    case PathPositionType.Float:
+    case PositionType.Float:
       break;
     default:
       throw new Error(`PathPositionType: "${positionType}" undefined`);
   }
   return { x, y } as Position;
+}
+
+export function getPositionCenter(source: Position, target: Position) {
+  return { x: (source.x + target.x) / 2, y: (source.y + target.y) / 2 };
+}
+
+export function getPositionDistance(source: Position, target: Position) {
+  return { x: target.x - source.x, y: target.y - source.y };
 }

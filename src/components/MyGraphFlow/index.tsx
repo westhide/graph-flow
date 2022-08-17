@@ -1,11 +1,15 @@
-export { linePathDraw, bezierPathDraw } from "./utils/pathDraw";
-export { mergeOffset, getEndpointOffset } from "./utils/position";
+export { linePathDraw, curvePathDraw, stepPathDraw } from "./utils/pathDraw";
+export {
+  mergeOffset,
+  getEndpointOffset,
+  getPositionCenter,
+  getPositionDistance,
+} from "./utils/position";
 export { type NodeRect, type NodeOptions, Node } from "./Node";
 export {
   type PathPosition,
   type PathOptions,
   PathType,
-  PathPositionType,
   Path,
 } from "./Edge/Path";
 export {
@@ -16,9 +20,8 @@ export {
 export { type EdgeEndpointsOptions, type EdgeOptions, Edge } from "./Edge";
 
 /**  ##Script */
-import type { MarkOptional, ArrayOrSingle, Merge } from "@/utils/UseType";
+import type { ArrayOrSingle, Merge } from "@/utils/UseType";
 import {
-  type PathOptions,
   type EdgeOptions,
   type NodeOptions,
   getEndpointOffset,
@@ -31,13 +34,31 @@ export type Position = {
   y: number;
 };
 
+export enum PositionType {
+  Left = "left",
+  Top = "top",
+  Right = "right",
+  Bottom = "bottom",
+  Float = "float",
+}
+
 export type GraphFlowType = "digraph" | "undigraph" | "tree";
 
-type RelationEdgeOptions = Partial<
-  Merge<EdgeOptions, { path: MarkOptional<PathOptions, "positions"> }>
+export type RelationEdgeOptions = Partial<
+  Merge<
+    EdgeOptions,
+    {
+      path?: Merge<
+        EdgeOptions["path"],
+        {
+          positions?: Partial<EdgeOptions["path"]["positions"]>;
+        }
+      >;
+    }
+  >
 >;
 
-type RelationOptions<NodeId extends string = string> = {
+export type RelationOptions<NodeId extends string = string> = {
   id?: string;
   source: NodeId;
   target: NodeId;
@@ -63,10 +84,15 @@ class Relation {
       source: sourceNode.position,
       target: targetNode.position,
     };
+    // TODO: fix ugly setter
     edgeOptions.path = {
       id: `[${sourceNode.id},${targetNode.id}]`,
       positions,
       ...edgeOptions.path,
+    };
+    edgeOptions.path.positions = {
+      ...positions,
+      ...edgeOptions.path.positions,
     };
 
     const edge = new Edge(edgeOptions as EdgeOptions);
@@ -91,13 +117,11 @@ class Relation {
       const { positions } = this.edge.path;
       const sourceOffset = getEndpointOffset(
         this.source.DOMRect,
-        positions.type,
-        "source"
+        positions.sourceType
       );
       const targetOffset = getEndpointOffset(
-        this.source.DOMRect,
-        positions.type,
-        "target"
+        this.target.DOMRect,
+        positions.targetType
       );
       Object.assign(positions.sourceOffset, { ...sourceOffset });
       Object.assign(positions.targetOffset, { ...targetOffset });

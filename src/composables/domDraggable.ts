@@ -30,8 +30,8 @@ export function domDraggable(
   let offset = $ref<Position | undefined>();
 
   const start = (e: PointerEvent) => {
-    const { x: rootX, y: rootY } = getElementPosition(root);
     const { x: targetX, y: targetY } = getElementPosition(target);
+    const { x: rootX, y: rootY } = getElementPosition(root);
     offset = {
       x: e.pageX - targetX + rootX,
       y: e.pageY - targetY + rootY,

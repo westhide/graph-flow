@@ -4,33 +4,35 @@ import type { MarkOptional } from "@/utils/UseType";
 import {
   type EndpointType,
   type Position,
+  PositionType,
   mergeOffset,
 } from "@/components/MyGraphFlow";
 
 export const enum PathType {
   Line = "line",
-  Bezier = "bezier",
-}
-
-export const enum PathPositionType {
-  Left = "left",
-  Top = "top",
-  Right = "right",
-  Bottom = "bottom",
-  Float = "float",
+  Curve = "curve",
+  Step = "step",
 }
 
 export type PathPosition = {
-  type: PathPositionType;
+  sourceType: PositionType;
+  targetType: PositionType;
   source: Position;
   target: Position;
   sourceOffset: Position;
   targetOffset: Position;
+  curvature: number;
+  stepCornerSize: number;
 };
 
 type PartialPathPosition = MarkOptional<
   PathPosition,
-  "type" | "sourceOffset" | "targetOffset"
+  | "sourceType"
+  | "targetType"
+  | "sourceOffset"
+  | "targetOffset"
+  | "curvature"
+  | "stepCornerSize"
 >;
 
 export type PathOptions = {
@@ -38,8 +40,7 @@ export type PathOptions = {
   type?: PathType;
   positions: PartialPathPosition;
   attributes?: SVGAttributes;
-  draw?: (position: PathPosition, curvature: number) => string;
-  curvature?: number;
+  draw?: (position: PathPosition) => string;
 };
 
 type EventMapKey = object | string;
@@ -54,8 +55,7 @@ export class Path {
   type: PathType;
   positions: PathPosition;
   attributes: SVGAttributes;
-  draw: (position: PathPosition, curvature: number) => string;
-  curvature: number;
+  draw: (position: PathPosition) => string;
 
   eventHandler = new EventHandler<EventHandlerOptions>(["move"]);
 
@@ -68,17 +68,15 @@ export class Path {
     defaultsDeep(options, pathPreset.cases[type], {
       type,
       positions: pathPreset.positions,
-      curvature: pathPreset.curvature,
     });
     defaultNanoid(options);
 
-    const { id, positions, attributes, draw, curvature } = reactive(options);
+    const { id, positions, attributes, draw } = reactive(options);
     this.id = id!;
     this.type = type;
     this.positions = positions as PathPosition;
     this.attributes = attributes!;
     this.draw = draw!;
-    this.curvature = curvature!;
 
     this._watchPathDraw();
   }
@@ -92,7 +90,7 @@ export class Path {
 
     if (d === undefined) {
       this.stopWatchDrawPath = watchEffect(() => {
-        attributes!.d = draw(this.offsetPositions, this.curvature);
+        attributes!.d = draw(this.offsetPositions);
       });
     }
   }

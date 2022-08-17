@@ -1,5 +1,5 @@
 import type { Ref, StyleValue, VNode } from "vue";
-import type { Writable } from "@/utils/UseType";
+import type { Writable, ValueOf } from "@/utils/UseType";
 import { type EventOptions, EventHandler } from "@/utils/UseEventHandler";
 import { type Position, containerKey } from "@/components/MyGraphFlow";
 
@@ -7,10 +7,28 @@ export type NodeRect = Writable<DOMRect>;
 
 export type NodeOptions = {
   id?: string;
+  showId?: boolean;
   position: Position;
   draggable?: boolean;
   label?: string | VNode;
+  suffix?: keyof typeof suffixElement | VNode;
+  suffixColor?: keyof typeof suffixColorMap;
   slot?: VNode;
+};
+
+const suffixElement = {
+  arrowUp: <i-tabler-arrow-big-up-line class="inline" />,
+  arrowDown: <i-tabler-arrow-big-downLine class="inline" />,
+  chevronsUp: <i-bx-chevrons-up class="inline" />,
+  chevronsDown: <i-bx-chevrons-down class="inline" />,
+};
+const suffixColorMap = {
+  green: "text-green-600",
+  orange: "text-orange-600",
+  red: "text-red-600",
+  blue: "text-blue-600",
+  gray: "text-gray-600",
+  yellow: "text-yellow-600",
 };
 
 type EventMapKey = object | string;
@@ -22,9 +40,12 @@ type EventHandlerOptions = {
 
 export class Node {
   id: string;
+  showId?: boolean;
   position: Position;
   draggable: boolean;
   label: string | VNode;
+  suffix?: VNode;
+  suffixColor?: ValueOf<typeof suffixColorMap>;
   slot?: VNode;
 
   el?: Ref<HTMLElement | null> | HTMLElement;
@@ -37,12 +58,27 @@ export class Node {
     defaultsDeep(options, nodePreset);
     defaultNanoid(options);
 
-    const { id, position, draggable, label, slot } = reactive(options);
+    const {
+      id,
+      showId,
+      position,
+      draggable,
+      label,
+      suffix,
+      suffixColor,
+      slot,
+    } = reactive(options);
     this.id = id!;
+    this.showId = showId;
     this.position = position;
     this.draggable = draggable!;
     this.label = label!;
     this.slot = slot;
+
+    if (isString(suffix)) this.suffix = suffixElement[suffix];
+    else this.suffix = suffix;
+
+    if (suffixColor) this.suffixColor = suffixColorMap[suffixColor];
   }
 
   movePosition(position: Partial<Position>) {
@@ -101,12 +137,17 @@ export default defineComponent({
     node.mount(el);
 
     const { label } = useGraphFlowStore().preset.node;
+    const omitId = node.id.replace(
+      /(.{2})(.*)(.{2})/,
+      node.id.length > 4 ? "$1..$3" : "$1$3"
+    );
 
     const NodeElement = computed(() => (
-      <div class="px-1 border border-slate-300 rounded-[2px] bg-gray-100 select-none">
+      <section class="px-1 text-sm border border-slate-300 rounded-[2px] bg-gray-100 select-none opacity-80">
+        {node.showId ? <sup>&lt;{omitId}&gt;</sup> : ""}
         <span>{node.label ?? label}</span>
-        <span class="text-xs">{`<${node.id}>`}</span>
-      </div>
+        {node.suffix ? <span class={node.suffixColor}>{node.suffix}</span> : ""}
+      </section>
     ));
 
     return () => (

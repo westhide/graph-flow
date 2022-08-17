@@ -3,7 +3,7 @@
   "version": "0.0.0",
   "scripts": {
     "dev": "vite",
-    "check:front": "vue-tsc --noEmit -p tsconfig.vitest.json --composite false",
+    "check:front": "vue-tsc --noEmit",
     "check:wasm": "cargo check --manifest-path ./wasm-rs/Cargo.toml",
     "build": "run-p check:* build:wasm build:front",
     "build:front": "vite build",

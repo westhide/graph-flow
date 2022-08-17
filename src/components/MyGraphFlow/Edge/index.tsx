@@ -48,7 +48,7 @@ export class Edge {
 
     defaults(options, {
       type,
-      positionType: positions.type,
+      positionType: positions[`${type}Type`],
       position: positions[type],
       offset: positions[`${type}Offset`],
     });

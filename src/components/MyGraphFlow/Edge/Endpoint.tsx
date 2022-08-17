@@ -2,7 +2,7 @@ import type { Ref, StyleValue } from "vue";
 import { type EventOptions, EventHandler } from "@/utils/UseEventHandler";
 import {
   type Position,
-  type PathPositionType,
+  type PositionType,
   type NodeOptions,
   mergeOffset,
   Node,
@@ -12,7 +12,7 @@ export type EndpointType = "source" | "target";
 
 export type EndpointOptions = NodeOptions & {
   type: EndpointType;
-  positionType?: PathPositionType;
+  positionType?: PositionType;
   offset?: Position;
 };
 
@@ -25,7 +25,7 @@ type EventHandlerOptions = {
 
 export class Endpoint extends Node {
   type: EndpointType;
-  positionType: PathPositionType;
+  positionType: PositionType;
   offset: Position;
 
   override eventHandler = new EventHandler<EventHandlerOptions>(["move"]);
@@ -33,16 +33,19 @@ export class Endpoint extends Node {
   constructor(options: EndpointOptions) {
     const {
       endpoint: endpointPreset,
-      path: {
-        positions: { type: pathPositionType },
-      },
+      path: { positions },
     } = useGraphFlowStore().preset;
     defaultsDeep(options, endpointPreset);
     defaultNanoid(options);
 
     super(options);
 
-    const { type, positionType = pathPositionType, offset } = reactive(options);
+    const defaultPositionType = positions[`${options.type}Type`];
+    const {
+      type,
+      positionType = defaultPositionType,
+      offset,
+    } = reactive(options);
     this.type = type;
     this.positionType = positionType;
     this.offset = offset!;
