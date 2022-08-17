@@ -39,23 +39,6 @@ function setNodePosition(
   });
 }
 
-function addOptions(
-  nodesOptions: NodeOptions[],
-  relationsOptions: RelationOptions[],
-  parent: TreeNodeOptions,
-  node: TreeNodeOptions,
-  edge?: RelationEdgeOptions,
-  weight?: number
-) {
-  nodesOptions.push(node as NodeOptions);
-  relationsOptions.push({
-    source: parent.id!,
-    target: node.id!,
-    edge,
-    weight,
-  });
-}
-
 function generateGraphFlowOptions(
   parent: TreeNodeOptions,
   children: Children[],
@@ -74,8 +57,8 @@ function generateGraphFlowOptions(
     const { node, edge, weight, children: grandchildren } = child;
     defaultNanoid(node);
 
+    const lastRow = row;
     if (grandchildren) {
-      const lastRow = row;
       row = generateGraphFlowOptions(
         node,
         grandchildren,
@@ -85,15 +68,18 @@ function generateGraphFlowOptions(
         row,
         depth + 1
       );
+    } else row++;
 
-      const midRow = (lastRow + row - 1) / 2;
-      setNodePosition(node, depth, midRow, preset);
-      addOptions(nodesOptions, relationsOptions, parent, node, edge, weight);
-    } else {
-      setNodePosition(node, depth, row, preset);
-      addOptions(nodesOptions, relationsOptions, parent, node, edge, weight);
-      row++;
-    }
+    const midRow = (lastRow + row - 1) / 2;
+    setNodePosition(node, depth, midRow, preset);
+
+    nodesOptions.push(node as NodeOptions);
+    relationsOptions.push({
+      source: parent.id!,
+      target: node.id!,
+      edge,
+      weight,
+    });
   }
   return row;
 }
@@ -105,6 +91,7 @@ export class TreeFlow extends GraphFlow {
 
     const { treeFlow } = useGraphFlowStore().preset;
     const treeBasePoint = treeFlow.basePoint;
+
     for (const optionsItem of options) {
       const {
         basePoint = treeBasePoint,
@@ -113,7 +100,9 @@ export class TreeFlow extends GraphFlow {
         root,
         children,
       } = optionsItem;
+
       const preset = { basePoint, depthSpace, rowSpace };
+
       const row = generateGraphFlowOptions(
         root,
         children,
