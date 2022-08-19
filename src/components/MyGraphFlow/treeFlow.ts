@@ -4,15 +4,16 @@ import {
   type NodeOptions,
   type RelationEdgeOptions,
   type RelationOptions,
+  type Edge,
   GraphFlow,
 } from "@/components/MyGraphFlow";
 
 type TreeNodeOptions = MarkOptional<NodeOptions, "position">;
-type Children = {
+type ChildrenOptions = {
   node: TreeNodeOptions;
   edge?: RelationEdgeOptions;
   weight?: number;
-  children?: Children[];
+  children?: ChildrenOptions[];
 };
 
 export type TreeFlowOptions = {
@@ -20,7 +21,7 @@ export type TreeFlowOptions = {
   depthSpace?: number;
   rowSpace?: number;
   root: TreeNodeOptions;
-  children: Children[];
+  children: ChildrenOptions[];
 };
 
 function setNodePosition(
@@ -41,7 +42,7 @@ function setNodePosition(
 
 function generateGraphFlowOptions(
   parent: TreeNodeOptions,
-  children: Children[],
+  children: ChildrenOptions[],
   nodesOptions: NodeOptions[],
   relationsOptions: RelationOptions[],
   preset: {
@@ -84,7 +85,23 @@ function generateGraphFlowOptions(
   return row;
 }
 
+type Children = {
+  node: Node;
+  edge?: Edge;
+  weight?: number;
+  children?: Children[];
+};
+type Tree = {
+  root: Node;
+  children: Children[];
+  basePoint?: Position;
+  depthSpace?: number;
+  rowSpace?: number;
+};
+
 export class TreeFlow extends GraphFlow {
+  trees: Tree[];
+
   constructor(options: TreeFlowOptions[]) {
     const nodesOptions: NodeOptions[] = [];
     const relationsOptions: RelationOptions[] = [];
@@ -116,5 +133,11 @@ export class TreeFlow extends GraphFlow {
     }
 
     super({ nodes: nodesOptions, relations: relationsOptions });
+
+    this.trees = [];
+  }
+
+  protected _watchLayout() {
+    //
   }
 }

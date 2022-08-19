@@ -129,31 +129,44 @@ function onClick() {
 
 const treeFlow = new TreeFlow([
   {
-    root: {
-      label: "银行存款",
-      // suffix: "arrowUp",
-      // suffixColor: "green",
-    },
+    root: { label: "银行存款", data: { amount: "10,000" } },
     children: [
       {
-        node: { label: "预收账款1" },
+        node: { label: "预收账款1", suffix: "arrowUp", suffixColor: "red" },
         children: [
           {
-            node: { label: "应收账款1" },
+            node: {
+              label: "应收账款1",
+              suffix: "arrowDown",
+              suffixColor: "orange",
+              data: { amount: "10,000,000" },
+            },
             children: [
-              { node: { label: "主营业务收入1" } },
+              {
+                node: {
+                  label: "主营业务收入1",
+                  suffix: "arrowUp",
+                  suffixColor: "green",
+                },
+              },
               { node: { label: "主营业务收入2" } },
               { node: { label: "主营业务收入3" } },
               { node: { label: "主营业务收入4" } },
             ],
           },
-          { node: { label: "应收账款2" } },
+          {
+            node: {
+              label: "应收账款2",
+              suffix: "arrowDown",
+              suffixColor: "blue",
+            },
+          },
           { node: { label: "应收账款3" } },
           { node: { label: "应收账款4" } },
         ],
       },
       {
-        node: { label: "预收账款2" },
+        node: { label: "预收账款2", suffix: "arrowUp", suffixColor: "yellow" },
         children: [
           { node: { label: "应收账款5" } },
           {
@@ -169,7 +182,10 @@ const treeFlow = new TreeFlow([
           { node: { label: "应收账款8" } },
         ],
       },
-      { node: { label: "预收账款3" } },
+      {
+        node: { label: "预收账款3" },
+        children: [{ node: { label: "主营业务收入9" } }],
+      },
       { node: { label: "预收账款4" } },
       { node: { label: "预收账款5" } },
     ],
@@ -179,10 +195,8 @@ const treeFlow = new TreeFlow([
 
 <template>
   <span @click="onClick">Split</span>
-  <!--  <MyGraphFlow class="h-[1000px] border border-black" :graph-flow="graphFlow1">-->
-  <!--    <div>Inner</div>-->
-  <!--  </MyGraphFlow>-->
-  <MyGraphFlow class="h-[1000px] border border-black" :graph-flow="treeFlow">
+  <MyGraphFlow class="h-[600px] border border-black" :graph-flow="treeFlow">
     <div>Inner</div>
   </MyGraphFlow>
+  <MyGraphFlow class="h-[500px] border border-black" :graph-flow="graphFlow1" />
 </template>

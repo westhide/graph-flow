@@ -5,6 +5,10 @@ import { type Position, containerKey } from "@/components/MyGraphFlow";
 
 export type NodeRect = Writable<DOMRect>;
 
+type Data = {
+  amount: number | string;
+};
+
 export type NodeOptions = {
   id?: string;
   showId?: boolean;
@@ -14,6 +18,7 @@ export type NodeOptions = {
   suffix?: keyof typeof suffixElement | VNode;
   suffixColor?: keyof typeof suffixColorMap;
   slot?: VNode;
+  data?: Data;
 };
 
 const suffixElement = {
@@ -47,6 +52,7 @@ export class Node {
   suffix?: VNode;
   suffixColor?: ValueOf<typeof suffixColorMap>;
   slot?: VNode;
+  data?: Data;
 
   el?: Ref<HTMLElement | null> | HTMLElement;
   DOMRect = reactive({}) as NodeRect;
@@ -67,6 +73,7 @@ export class Node {
       suffix,
       suffixColor,
       slot,
+      data,
     } = reactive(options);
     this.id = id!;
     this.showId = showId;
@@ -74,6 +81,7 @@ export class Node {
     this.draggable = draggable!;
     this.label = label!;
     this.slot = slot;
+    this.data = data as Data;
 
     if (isString(suffix)) this.suffix = suffixElement[suffix];
     else this.suffix = suffix;
@@ -147,6 +155,7 @@ export default defineComponent({
         {node.showId ? <sup>&lt;{omitId}&gt;</sup> : ""}
         <span>{node.label ?? label}</span>
         {node.suffix ? <span class={node.suffixColor}>{node.suffix}</span> : ""}
+        {node.data?.amount ? <div>&lt;{node.data.amount}&gt;</div> : ""}
       </section>
     ));
 
