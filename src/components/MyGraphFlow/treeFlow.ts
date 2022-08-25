@@ -134,6 +134,7 @@ export class TreeFlow extends GraphFlow {
 
     super({ nodes: nodesOptions, relations: relationsOptions });
 
+    // TODO: tree struct
     this.trees = [];
   }
 

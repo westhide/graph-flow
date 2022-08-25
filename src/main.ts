@@ -1,8 +1,7 @@
 import { createApp } from "vue";
+import "./styles/index.less";
 
 import App from "./App.vue";
-
-import "./styles/index.less";
 
 import router from "./router";
 import store from "./stores";
@@ -15,3 +14,5 @@ app.use(store);
 app.use(i18n);
 
 app.mount("#app");
+
+initWasm();

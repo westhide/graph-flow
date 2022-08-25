@@ -186,6 +186,12 @@ export class GraphFlow {
       ? options.map((optionsItem) => this._createRelation(optionsItem))
       : this._createRelation(options);
   }
+
+  getNode(nodeId: string) {
+    const node = this.nodes.get(nodeId);
+    if (node === undefined) throw new Error(`Node.id: "${nodeId}" undefined`);
+    return node;
+  }
 }
 
 /** ##Component */

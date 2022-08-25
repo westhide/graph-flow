@@ -1,3 +1,4 @@
-import init from "wasm-rs";
+import * as wasm from "wasm-rs";
 
-export const wasm = await init();
+export { default as initWasm } from "wasm-rs";
+export { wasm };

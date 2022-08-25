@@ -1,3 +1,3 @@
 import Wasm from "vite-plugin-wasm-pack";
 
-export default [Wasm("wasm-rs")];
+export default Wasm("wasm-rs");

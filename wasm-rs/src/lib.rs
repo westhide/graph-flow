@@ -1,5 +1,7 @@
+pub mod components;
 pub mod utils;
 
+pub use utils::use_dom;
 use wasm_bindgen::prelude::*;
 use web_sys::console;
 
@@ -13,5 +15,6 @@ extern crate web_sys;
 
 #[wasm_bindgen(start)]
 pub fn setup() {
-    console::log_1(&"Wasm Setup Success".into())
+    utils::set_panic_hook();
+    console::log_1(&"Wasm Setup Success".into());
 }
