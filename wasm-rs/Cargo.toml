@@ -11,10 +11,17 @@ crate-type = ["cdylib", "rlib"]
 default = ["console_error_panic_hook"]
 
 [dependencies]
-wasm-bindgen = "0.2.80"
+wasm-bindgen = { version = "0.2.80", features = ["serde-serialize"] }
+wasm-bindgen-futures = "0.4.30"
 web-sys = { version = "0.3.57", features = ["console", 'Document', 'Element', 'HtmlElement', 'Node', 'Window'] }
 
 sycamore = "0.8.0-beta.7"
+
+getrandom = { version = "0.2", features = ["js"] }
+nanoid = "0.4.0"
+
+serde = { version = "1.0", features = ["derive","rc"] }
+serde_json = { version = "^1.0" }
 
 # The `console_error_panic_hook` crate provides better debugging of panics by
 # logging them with `console.error`. This is great for development, but requires

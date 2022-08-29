@@ -2,6 +2,7 @@ use sycamore::prelude::*;
 use wasm_bindgen::prelude::*;
 use web_sys::Node;
 
+/// Component Example 1
 #[component]
 fn ComponentExample1<G: Html>(cx: Scope) -> View<G> {
     let name = create_signal(cx, String::new());
@@ -15,9 +16,9 @@ fn ComponentExample1<G: Html>(cx: Scope) -> View<G> {
     };
 
     view! { cx,
-        div {
+        section {
             strong(class="inline-block mt-2"){
-                "Example01"
+                "Example1"
             }
             h1 {
                 "Hello "
@@ -30,7 +31,8 @@ fn ComponentExample1<G: Html>(cx: Scope) -> View<G> {
     }
 }
 
-#[wasm_bindgen]
-pub fn render_app_to(node: &Node) {
+/// Component Example 1 render entry
+#[wasm_bindgen(js_name = "renderComponentExample1To")]
+pub fn render_component_example_1_to(node: &Node) {
     sycamore::render_to(|ctx| view! { ctx, ComponentExample1 {} }, node);
 }
