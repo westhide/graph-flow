@@ -1,84 +1,50 @@
-use std::{cell::RefCell, rc::Rc};
-
 use serde::{Deserialize, Serialize};
 
-use super::{
-    id::ID,
-    node::Node,
-    store::{Store, StoreGenerator},
-    Tree,
-};
-use crate::utils::tree::id::Identity;
+use super::{id::Identity, rc_tree::RcTree, store::Store};
 
-type RcTree<T, I> = Tree<Rc<T>, Rc<I>>;
-type RcStore<T, I> = Store<ID, Rc<T>, Rc<I>>;
-
+/// # [TreeHandler]
 #[derive(Debug, Serialize, Deserialize)]
-pub struct TreeHandler<T, I> {
-    tree: RcTree<T, I>,
+pub struct TreeHandler<N, I> {
+    pub tree: RcTree<N, I>,
 
-    pub store: RcStore<T, I>,
+    pub store: Store<N, I>,
 }
 
-impl<T, I> TreeHandler<T, I> {
-    pub fn new(tree: RcTree<T, I>, store: RcStore<T, I>) -> Self {
+impl<N, I> TreeHandler<N, I>
+where
+    N: Identity,
+{
+    pub fn new(tree: RcTree<N, I>, store: Store<N, I>) -> Self {
         Self { tree, store }
     }
 
-    fn transform<N, F>(tree: Tree<T, I>, func: F) -> TreeHandler<N, I>
-    where
-        N: Identity,
-        F: Fn(T) -> N,
-    {
-        let tree = tree.transform(&mut |value, info| {
-            let rc_node = Rc::new(func(value));
-            let rc_info = Rc::new(info);
-            (rc_node, rc_info)
-        });
-        let store = tree.gen_store();
-        TreeHandler::new(tree, store)
-    }
-
-    pub fn node_tree(tree: Tree<T, I>) -> TreeHandler<Node<T>, I> {
-        TreeHandler::transform(tree, Node::new)
-    }
-
-    pub fn rc_tree(tree: Tree<T, I>) -> TreeHandler<RefCell<T>, I>
-    where
-        T: Identity,
-    {
-        TreeHandler::transform(tree, RefCell::new)
-    }
-
-    pub fn get_tree(&self) -> &RcTree<T, I> {
-        &self.tree
-    }
-
-    // TODO: when update tree, sync store data
-    pub fn update_tree(&mut self) -> &mut RcTree<T, I> {
-        &mut self.tree
-    }
-
-    // fn add_child(&mut self,parent:&Self, child: Tree<T, I>) {
-    //     let Self {node, children, .. } = parent;
-    //
-    //     let child = Self::rc_tree(child);
-    //
-    //     if let Some(children) = children {
-    //         children.push(child)
-    //     } else {
-    //         *children = Some(vec![child])
-    //     }
+    // pub fn add_child<T>(&mut self, child: RcTree<N, I>) -> Option<&Rc<N>> {
+    //     // let c = parent.as_ref();
+    //     // Some(parent)
+    //     // let Self {node, children, .. } = parent;
+    //     //
+    //     // let child = Self::rc_tree(child);
+    //     //
+    //     // if let Some(children) = children {
+    //     //     children.push(child)
+    //     // } else {
+    //     //     *children = Some(vec![child])
+    //     // }
+    //     None
     // }
 }
 
-// impl<T,I> Deref for TreeHandler<T,I> {
-//     type Target =RcTree<T,I>;
-//
-//     fn deref(&self) -> &Self::Target {
-//         &self.tree
-//     }
-// }
+impl<N, I> From<RcTree<N, I>> for TreeHandler<N, I>
+where
+    N: Identity,
+{
+    /// # Panics
+    /// Node [ID] can not repeat
+    fn from(tree: RcTree<N, I>) -> Self {
+        let store = tree.store();
+        TreeHandler::new(tree, store)
+    }
+}
 
 // TODO
 // pub fn from_closure_table() {}

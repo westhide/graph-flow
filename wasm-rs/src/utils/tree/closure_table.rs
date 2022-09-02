@@ -1,4 +1,4 @@
-/// [ClosureTable] Tree
+/// # [ClosureTable]
 #[derive(Default)]
 pub struct ClosureTable<N, I> {
     pub ancestor: N,

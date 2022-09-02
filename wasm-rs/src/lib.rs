@@ -1,3 +1,5 @@
+#![feature(map_try_insert)]
+
 pub mod components;
 pub mod shared;
 pub mod utils;

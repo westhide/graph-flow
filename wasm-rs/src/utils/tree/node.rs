@@ -1,4 +1,4 @@
-use std::{cell::RefCell, rc::Rc};
+use std::{cell::RefCell, ops::Deref, rc::Rc};
 
 use serde::{Deserialize, Serialize};
 
@@ -7,14 +7,30 @@ use super::id::{Identity, ID};
 #[derive(Debug, Serialize, Deserialize)]
 pub struct Node<T> {
     id: ID,
-    pub value: RefCell<T>,
+    value: T,
 }
 
 impl<T> Node<T> {
     pub fn new(value: T) -> Self {
         let id = ID::default();
-        let value = RefCell::new(value);
+        Self { id, value }
+    }
+}
 
+impl<T> Deref for Node<T> {
+    type Target = T;
+
+    fn deref(&self) -> &Self::Target {
+        &self.value
+    }
+}
+
+impl<T> From<T> for Node<T>
+where
+    T: Identity,
+{
+    fn from(value: T) -> Self {
+        let id = value.id();
         Self { id, value }
     }
 }
