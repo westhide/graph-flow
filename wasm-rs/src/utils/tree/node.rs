@@ -13,7 +13,10 @@ pub struct Node<T> {
 impl<T> Node<T> {
     pub fn new(value: T) -> Self {
         let id = ID::default();
-        Self { id, value }
+        Self {
+            id,
+            value,
+        }
     }
 }
 
@@ -31,7 +34,10 @@ where
 {
     fn from(value: T) -> Self {
         let id = value.id();
-        Self { id, value }
+        Self {
+            id,
+            value,
+        }
     }
 }
 

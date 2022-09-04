@@ -4,6 +4,7 @@ pub mod edge;
 pub mod error;
 pub mod handler;
 pub mod id;
+pub mod iterator;
 pub mod node;
 pub mod ops;
 pub mod rc_tree;

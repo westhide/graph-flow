@@ -11,7 +11,9 @@ impl<N, I> AddChild for Tree<N, I> {
     type Output = ();
 
     fn add_child(&mut self, child: Self) -> Self::Output {
-        let Self { children, .. } = self;
+        let Self {
+            children, ..
+        } = self;
 
         if let Some(children) = children {
             children.push(child)

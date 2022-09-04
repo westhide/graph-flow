@@ -14,10 +14,6 @@ impl<N, I> TreeHandler<N, I>
 where
     N: Identity,
 {
-    pub fn new(tree: RcTree<N, I>, store: Store<N, I>) -> Self {
-        Self { tree, store }
-    }
-
     // pub fn add_child<T>(&mut self, child: RcTree<N, I>) -> Option<&Rc<N>> {
     //     // let c = parent.as_ref();
     //     // Some(parent)
@@ -42,7 +38,10 @@ where
     /// Node [ID] can not repeat
     fn from(tree: RcTree<N, I>) -> Self {
         let store = tree.store();
-        TreeHandler::new(tree, store)
+        TreeHandler {
+            tree,
+            store,
+        }
     }
 }
 

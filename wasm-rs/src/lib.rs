@@ -1,4 +1,16 @@
+// https://doc.rust-lang.org/beta/unstable-book
+
 #![feature(map_try_insert)]
+#![feature(negative_impls)]
+#![feature(inline_const)]
+// #![feature(inline_const_pat)]
+#![feature(box_syntax)]
+#![feature(box_patterns)]
+#![feature(trait_alias)]
+#![feature(type_changing_struct_update)]
+#![feature(type_name_of_val)]
+#![feature(unboxed_closures)]
+#![feature(fn_traits)]
 
 pub mod components;
 pub mod shared;

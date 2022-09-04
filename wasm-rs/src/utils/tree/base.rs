@@ -1,6 +1,8 @@
+use indexmap::IndexMap;
 use serde::{Deserialize, Serialize};
 
 use super::{
+    id::Identity,
     rc_box::RcBox,
     rc_tree::{Parent, RcTree, Relation},
 };
@@ -14,16 +16,6 @@ pub struct Tree<N, I> {
 }
 
 impl<N, I> Tree<N, I> {
-    pub fn new(node: N, info: I, children: Option<Vec<Tree<N, I>>>) -> Self {
-        Self {
-            node,
-            info,
-            children,
-        }
-    }
-}
-
-impl<N, I> Tree<N, I> {
     fn _transform<N2, I2, F>(
         self,
         func: &mut F,
@@ -31,6 +23,7 @@ impl<N, I> Tree<N, I> {
     ) -> RcTree<N2, I2>
     where
         F: FnMut(N, I) -> (N2, I2),
+        N2: Identity,
     {
         let Self {
             node,
@@ -49,11 +42,14 @@ impl<N, I> Tree<N, I> {
             children: None,
         });
 
+        let mut rc_children = IndexMap::new();
+
         if let Some(children) = children {
-            let rc_children = children
-                .into_iter()
-                .map(|child| child._transform(func, Some(rc_tree.weak())))
-                .collect();
+            for child in children {
+                let child = child._transform(func, Some(rc_tree.weak()));
+                let id = child.id();
+                rc_children.insert(id, child);
+            }
 
             rc_tree.borrow_mut().children = Some(rc_children)
         }
@@ -64,6 +60,7 @@ impl<N, I> Tree<N, I> {
     pub fn transform<N2, I2, F>(self, func: &mut F) -> RcTree<N2, I2>
     where
         F: FnMut(N, I) -> (N2, I2),
+        N2: Identity,
     {
         self._transform(func, None)
     }
